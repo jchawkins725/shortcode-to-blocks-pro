@@ -1,0 +1,985 @@
+# Copyright (C) 2026 Jonathan Hawkins
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Shortcode to Blocks Converter Pro 1.0.0\n"
+"Report-Msgid-Bugs-To: https://www.jonathanchawkins.com/\n"
+"POT-Creation-Date: 2026-02-18T00:00:00+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Domain: shortcode-to-blocks-pro\n"
+
+#. Plugin Name of the plugin
+msgid "Shortcode to Blocks Converter Pro"
+msgstr ""
+
+#. Description of the plugin
+msgid "Pro add-on for the Shortcode to Blocks Converter. Adds batch conversion, 17+ advanced converters, logging, tools, and license management."
+msgstr ""
+
+#. Author of the plugin
+msgid "Jonathan Hawkins"
+msgstr ""
+
+#: shortcode-to-blocks-pro.php:45
+#, php-format
+msgid "%s requires the free Shortcode to Blocks plugin to be installed and activated."
+msgstr ""
+
+#: shortcode-to-blocks-pro.php:79
+#: shortcode-to-blocks-pro.php:90
+msgid "Convert"
+msgstr ""
+
+#: shortcode-to-blocks-pro.php:80
+#: shortcode-to-blocks-pro.php:91
+#: admin/views/revert.php:235
+msgid "Revert"
+msgstr ""
+
+#: shortcode-to-blocks-pro.php:81
+#: shortcode-to-blocks-pro.php:92
+msgid "Tools"
+msgstr ""
+
+#: shortcode-to-blocks-pro.php:82
+#: shortcode-to-blocks-pro.php:93
+msgid "Logs"
+msgstr ""
+
+#: shortcode-to-blocks-pro.php:83
+#: shortcode-to-blocks-pro.php:94
+#: admin/Converted.php:135
+msgid "Converted Posts"
+msgstr ""
+
+#: includes/License.php:52
+msgid "License"
+msgstr ""
+
+#: includes/License.php:59
+msgid "License Key"
+msgstr ""
+
+#: includes/License.php:82
+msgid "Active"
+msgstr ""
+
+#: includes/License.php:83
+msgid "Deactivate License"
+msgstr ""
+
+#: includes/License.php:87
+msgid "Invalid"
+msgstr ""
+
+#: includes/License.php:89
+msgid "Activate License"
+msgstr ""
+
+#: admin/Batch.php:128
+#: admin/Converted.php:9
+#: admin/Logs.php:26
+#: admin/Tools.php:25
+msgid "Insufficient permissions"
+msgstr ""
+
+#: admin/Batch.php:200
+#, php-format
+msgid "Reached limit of %d items."
+msgstr ""
+
+#: admin/Batch.php:550
+#, php-format
+msgid "No backup found for post ID %d"
+msgstr ""
+
+#: admin/Batch.php:826
+#: admin/Tools.php:22
+msgid "Invalid nonce"
+msgstr ""
+
+#: admin/Batch.php:834
+#: admin/Tools.php:421
+msgid "Missing batch ID"
+msgstr ""
+
+#: admin/Batch.php:841
+msgid "Dry run report not found or expired. Please run the dry run again."
+msgstr ""
+
+#: admin/BulkActions.php:14
+msgid "Convert to Blocks"
+msgstr ""
+
+#: admin/BulkActions.php:79
+#, php-format
+msgid "STBP: Converted %d of %d selected items for post type \"%s\". Batch ID: %s"
+msgstr ""
+
+#: admin/Converted.php:140
+msgid "Filter by type"
+msgstr ""
+
+#: admin/Converted.php:142
+msgid "All Types"
+msgstr ""
+
+#: admin/Converted.php:147
+msgid "Search title or ID"
+msgstr ""
+
+#: admin/Converted.php:148
+#: admin/Converted.php:208
+msgid "Batch ID"
+msgstr ""
+
+#: admin/Converted.php:149
+#: admin/Logs.php:185
+msgid "Filter"
+msgstr ""
+
+#: admin/Converted.php:160
+#: admin/Logs.php:192
+msgid "Clear filters"
+msgstr ""
+
+#: admin/Converted.php:199
+msgid "ID"
+msgstr ""
+
+#: admin/Converted.php:200
+msgid "Title"
+msgstr ""
+
+#: admin/Converted.php:201
+#: admin/views/convert.php:480
+msgid "Type"
+msgstr ""
+
+#: admin/Converted.php:202
+#: admin/Logs.php:211
+#: admin/views/dashboard.php:273
+msgid "Status"
+msgstr ""
+
+#: admin/Converted.php:204
+msgid "Link"
+msgstr ""
+
+#: admin/Converted.php:206
+msgid "Converted"
+msgstr ""
+
+#: admin/Converted.php:207
+msgid "Backup Saved"
+msgstr ""
+
+#: admin/Converted.php:209
+msgid "Actions"
+msgstr ""
+
+#: admin/Converted.php:214
+msgid "No converted posts found."
+msgstr ""
+
+#: admin/Converted.php:224
+msgid "View"
+msgstr ""
+
+#: admin/Converted.php:254
+msgid "Select at least one post to revert."
+msgstr ""
+
+#: admin/Logs.php:31
+msgid "Logs table has been installed or repaired (already existed)."
+msgstr ""
+
+#: admin/Logs.php:38
+msgid "All logs were purged."
+msgstr ""
+
+#: admin/Logs.php:42
+msgid "No logs to purge."
+msgstr ""
+
+#: admin/Logs.php:53
+#, php-format
+msgid_plural "%1$d logs older than %2$d days were purged."
+msgid "%1$d log older than %2$d day was purged."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/Logs.php:60
+#, php-format
+msgid "No logs older than %d days to purge."
+msgstr ""
+
+#: admin/Logs.php:103
+msgid "Logs"
+msgstr ""
+
+#: admin/Logs.php:117
+msgid "Logs table is missing. Click \"Install/repair logs table\" to create it."
+msgstr ""
+
+#: admin/Logs.php:118
+#: admin/Logs.php:132
+#: admin/Tools.php:156
+msgid "Install/repair logs table"
+msgstr ""
+
+#: admin/Logs.php:124
+msgid "Export logs (CSV)"
+msgstr ""
+
+#: admin/Logs.php:128
+msgid "This will permanently delete all logs. Continue?"
+msgstr ""
+
+#: admin/Logs.php:129
+#: admin/Tools.php:153
+msgid "Purge all logs"
+msgstr ""
+
+#: admin/Logs.php:154
+msgid "All actions"
+msgstr ""
+
+#: admin/Logs.php:155
+msgid "convert"
+msgstr ""
+
+#: admin/Logs.php:156
+msgid "revert"
+msgstr ""
+
+#: admin/Logs.php:157
+msgid "batch"
+msgstr ""
+
+#: admin/Logs.php:158
+msgid "batch-revert"
+msgstr ""
+
+#: admin/Logs.php:159
+msgid "scan"
+msgstr ""
+
+#: admin/Logs.php:160
+#: admin/Logs.php:174
+#: admin/views/convert.php:560
+msgid "error"
+msgstr ""
+
+#: admin/Logs.php:161
+msgid "purge"
+msgstr ""
+
+#: admin/Logs.php:163
+msgid "Filter by action"
+msgstr ""
+
+#: admin/Logs.php:172
+msgid "All statuses"
+msgstr ""
+
+#: admin/Logs.php:173
+msgid "success"
+msgstr ""
+
+#: admin/Logs.php:175
+msgid "warning"
+msgstr ""
+
+#: admin/Logs.php:177
+msgid "Filter by status"
+msgstr ""
+
+#: admin/Logs.php:184
+msgid "Search messages…"
+msgstr ""
+
+#: admin/Logs.php:207
+#: admin/views/dashboard.php:271
+msgid "Time"
+msgstr ""
+
+#: admin/Logs.php:208
+#: admin/views/dashboard.php:275
+msgid "User"
+msgstr ""
+
+#: admin/Logs.php:209
+#: admin/views/dashboard.php:274
+msgid "Post"
+msgstr ""
+
+#: admin/Logs.php:210
+#: admin/views/dashboard.php:272
+msgid "Action"
+msgstr ""
+
+#: admin/Logs.php:212
+msgid "Message"
+msgstr ""
+
+#: admin/Settings.php:60
+#: admin/Tools.php:166
+msgid "Backups"
+msgstr ""
+
+#: admin/Settings.php:72
+msgid "Old-backup threshold (days)"
+msgstr ""
+
+#: admin/Settings.php:80
+msgid "Auto-purge backups > 1 year"
+msgstr ""
+
+#: admin/Settings.php:120
+msgid "Daily WP-Cron job to delete backups older than 1 year."
+msgstr ""
+
+#: admin/Tools.php:100
+msgid "Tools"
+msgstr ""
+
+#: admin/Tools.php:108
+msgid "All backups were purged."
+msgstr ""
+
+#: admin/Tools.php:109
+#, php-format
+msgid_plural "%d backups were purged."
+msgid "%d backup was purged."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/Tools.php:113
+#: admin/Tools.php:370
+msgid "Detection scan complete."
+msgstr ""
+
+#: admin/Tools.php:121
+msgid "Detection"
+msgstr ""
+
+#: admin/Tools.php:122
+msgid "Scan selected post types to detect WPBakery content. Results feed the Dashboard and batch conversion tools."
+msgstr ""
+
+#: admin/Tools.php:126
+msgid "Run detection scan (batch)"
+msgstr ""
+
+#: admin/Tools.php:136
+msgid "Logs"
+msgstr ""
+
+#: admin/Tools.php:137
+msgid "Manage converter logs: export for auditing, purge old entries, or clear all."
+msgstr ""
+
+#: admin/Tools.php:140
+msgid "Download logs CSV"
+msgstr ""
+
+#: admin/Tools.php:144
+msgid "Permanently delete logs older than 14 days?"
+msgstr ""
+
+#: admin/Tools.php:145
+msgid "Purge logs older than 14 days"
+msgstr ""
+
+#: admin/Tools.php:148
+msgid "Permanently delete logs older than 30 days?"
+msgstr ""
+
+#: admin/Tools.php:149
+msgid "Purge logs older than 30 days"
+msgstr ""
+
+#: admin/Tools.php:152
+msgid "This will permanently delete ALL logs. Continue?"
+msgstr ""
+
+#: admin/Tools.php:171
+#, php-format
+msgid "\"Purge old backups\" deletes backups older than %d days. Nothing is deleted automatically unless you enable the 1-year auto-purge in Settings."
+msgstr ""
+
+#: admin/Tools.php:175
+msgid "Backups are kept until you purge them. \"Purge old backups\" is disabled when the threshold is 0. You can still use \"Purge all backups\"."
+msgstr ""
+
+#: admin/Tools.php:181
+msgid "Permanently delete old backups?"
+msgstr ""
+
+#: admin/Tools.php:182
+msgid "Purge old backups"
+msgstr ""
+
+#: admin/Tools.php:185
+msgid "This will permanently delete ALL backups. Continue?"
+msgstr ""
+
+#: admin/Tools.php:186
+msgid "Purge all backups"
+msgstr ""
+
+#: admin/Tools.php:227
+msgid "Starting scan…"
+msgstr ""
+
+#: admin/Tools.php:395
+#, php-format
+msgid "Scanning… %1$d of ~%2$d (%3$d%%)"
+msgstr ""
+
+#: admin/Tools.php:401
+msgid "Scanning for WPBakery content…"
+msgstr ""
+
+#: admin/Tools.php:403
+#, php-format
+msgid "%1$d of ~%2$d posts scanned (%3$d%%). Processing next batch…"
+msgstr ""
+
+#: admin/Tools.php:406
+msgid "Continue now"
+msgstr ""
+
+#: admin/Tools.php:427
+msgid "No dry run results found (expired or empty)."
+msgstr ""
+
+#: admin/views/convert.php:8
+msgid "Batch convert"
+msgstr ""
+
+#: admin/views/convert.php:15
+msgid "No posts detected with WPBakery content yet. Run a scan first on the Tools page."
+msgstr ""
+
+#: admin/views/convert.php:17
+#: admin/views/dashboard.php:154
+msgid "Scan for WPBakery content"
+msgstr ""
+
+#: admin/views/convert.php:47
+msgid "Select post types"
+msgstr ""
+
+#: admin/views/convert.php:49
+msgid "Only posts containing WPBakery shortcodes will be converted."
+msgstr ""
+
+#: admin/views/convert.php:52
+msgid "Select all"
+msgstr ""
+
+#: admin/views/convert.php:54
+msgid "Select none"
+msgstr ""
+
+#: admin/views/convert.php:62
+#: admin/views/convert.php:114
+#: admin/views/convert.php:201
+#: admin/views/revert.php:236
+msgid "posts"
+msgstr ""
+
+#: admin/views/convert.php:67
+#: admin/views/convert.php:69
+msgid "How many to convert?"
+msgstr ""
+
+#: admin/views/convert.php:72
+msgid "Convert all"
+msgstr ""
+
+#: admin/views/convert.php:77
+msgid "Limit to"
+msgstr ""
+
+#: admin/views/convert.php:79
+msgid "Limit count"
+msgstr ""
+
+#: admin/views/convert.php:80
+msgid "items"
+msgstr ""
+
+#: admin/views/convert.php:87
+#: admin/views/convert.php:179
+msgid "Dry run (no changes)"
+msgstr ""
+
+#: admin/views/convert.php:88
+msgid "Simulates conversion without saving changes. At the end, you can download a CSV of posts that would change."
+msgstr ""
+
+#: admin/views/convert.php:94
+msgid "Start"
+msgstr ""
+
+#: admin/views/convert.php:97
+msgid "Cancel"
+msgstr ""
+
+#: admin/views/convert.php:102
+msgid "Conversion runs in chunks to avoid timeouts. You can keep this tab open and work elsewhere."
+msgstr ""
+
+#: admin/views/convert.php:109
+msgid "Overall progress"
+msgstr ""
+
+#: admin/views/convert.php:110
+#: admin/views/convert.php:125
+#: admin/views/convert.php:149
+#: admin/views/convert.php:194
+#: admin/views/convert.php:213
+msgid "Close"
+msgstr ""
+
+#: admin/views/convert.php:116
+msgid "ETA"
+msgstr ""
+
+#: admin/views/convert.php:117
+msgid "Speed"
+msgstr ""
+
+#: admin/views/convert.php:124
+msgid "Per-type progress"
+msgstr ""
+
+#: admin/views/convert.php:138
+#: admin/views/convert.php:395
+msgid "Queued"
+msgstr ""
+
+#: admin/views/convert.php:148
+#: admin/views/revert.php:76
+msgid "Summary"
+msgstr ""
+
+#: admin/views/convert.php:159
+msgid "Convert Parent and All Descendants"
+msgstr ""
+
+#: admin/views/convert.php:161
+#: admin/views/convert.php:523
+msgid "Please select a post type."
+msgstr ""
+
+#: admin/views/convert.php:163
+msgid "Select type"
+msgstr ""
+
+#: admin/views/convert.php:170
+msgid "Select parent"
+msgstr ""
+
+#: admin/views/convert.php:172
+#: admin/views/convert.php:234
+#: admin/views/convert.php:249
+msgid "None"
+msgstr ""
+
+#: admin/views/convert.php:174
+msgid "Convert parent and all descendants in one batch."
+msgstr ""
+
+#: admin/views/convert.php:180
+msgid "Simulates conversion without saving changes. Shows which posts would be converted."
+msgstr ""
+
+#: admin/views/convert.php:185
+msgid "Convert Tree"
+msgstr ""
+
+#: admin/views/convert.php:193
+msgid "Parent Tree Progress"
+msgstr ""
+
+#: admin/views/convert.php:198
+#: admin/views/convert.php:540
+msgid "Processing..."
+msgstr ""
+
+#: admin/views/convert.php:212
+msgid "Parent Tree Results"
+msgstr ""
+
+#: admin/views/convert.php:227
+msgid "Loading..."
+msgstr ""
+
+#: admin/views/convert.php:260
+#: admin/views/revert.php:84
+msgid "Tips"
+msgstr ""
+
+#: admin/views/convert.php:262
+msgid "Use Dry run first to see which posts would change and download a CSV report."
+msgstr ""
+
+#: admin/views/convert.php:263
+msgid "Parent Tree conversion processes a parent post and all its descendants in one batch."
+msgstr ""
+
+#: admin/views/convert.php:264
+msgid "Each conversion gets a unique batch ID for tracking and potential reverting."
+msgstr ""
+
+#: admin/views/convert.php:265
+msgid "If you cancel a batch conversion, you can resume later — already converted posts are skipped."
+msgstr ""
+
+#: admin/views/convert.php:266
+msgid "Run a new scan from Tools if you add new post types or WPBakery content."
+msgstr ""
+
+#: admin/views/convert.php:310
+msgid "Working…"
+msgstr ""
+
+#: admin/views/convert.php:311
+#: admin/views/convert.php:488
+msgid "Finished"
+msgstr ""
+
+#: admin/views/convert.php:373
+msgid "Select at least one post type."
+msgstr ""
+
+#: admin/views/convert.php:477
+msgid "Dry run finished."
+msgstr ""
+
+#: admin/views/convert.php:478
+msgid "Download dry-run CSV"
+msgstr ""
+
+#: admin/views/convert.php:480
+msgid "Would change"
+msgstr ""
+
+#: admin/views/convert.php:480
+msgid "No change"
+msgstr ""
+
+#: admin/views/convert.php:480
+#: admin/views/convert.php:592
+msgid "Errors"
+msgstr ""
+
+#: admin/views/convert.php:488
+msgid "Batch conversion finished."
+msgstr ""
+
+#: admin/views/convert.php:492
+#: admin/views/convert.php:603
+msgid "Batch id:"
+msgstr ""
+
+#: admin/views/convert.php:494
+#: admin/views/convert.php:605
+#: admin/views/convert.php:650
+msgid "Copy"
+msgstr ""
+
+#: admin/views/convert.php:499
+#: admin/views/convert.php:608
+msgid "Tip: you can revert this batch from the \"Revert\" submenu."
+msgstr ""
+
+#: admin/views/convert.php:505
+#: admin/views/convert.php:632
+#: admin/views/convert.php:634
+msgid "Network error. Try again."
+msgstr ""
+
+#: admin/views/convert.php:527
+msgid "Please select a parent post."
+msgstr ""
+
+#: admin/views/convert.php:544
+msgid "Finding posts with WPBakery content..."
+msgstr ""
+
+#: admin/views/convert.php:569
+msgid "Completed"
+msgstr ""
+
+#: admin/views/convert.php:576
+msgid "Parent:"
+msgstr ""
+
+#: admin/views/convert.php:580
+msgid "Parent batch conversion completed."
+msgstr ""
+
+#: admin/views/convert.php:585
+msgid "Download Dry-Run CSV"
+msgstr ""
+
+#: admin/views/convert.php:590
+msgid "Would Change"
+msgstr ""
+
+#: admin/views/convert.php:591
+msgid "No Change"
+msgstr ""
+
+#: admin/views/convert.php:612
+msgid "Found:"
+msgstr ""
+
+#: admin/views/convert.php:616
+msgid "Some errors occurred:"
+msgstr ""
+
+#: admin/views/convert.php:631
+msgid "Failed"
+msgstr ""
+
+#: admin/views/convert.php:649
+msgid "Copied!"
+msgstr ""
+
+#: admin/views/convert.php:161
+msgid "Select post type"
+msgstr ""
+
+#: admin/views/dashboard.php:143
+msgid "Shortcode to Blocks Converter"
+msgstr ""
+
+#: admin/views/dashboard.php:152
+msgid "It looks like we haven't detected any WPBakery content yet. Start by scanning your selected post types."
+msgstr ""
+
+#: admin/views/dashboard.php:161
+msgid "No post types selected. Choose them in Settings."
+msgstr ""
+
+#: admin/views/dashboard.php:166
+#, php-format
+msgid "You have %d backups older than %d days. Consider purging old backups."
+msgstr ""
+
+#: admin/views/dashboard.php:167
+msgid "Purge old backups"
+msgstr ""
+
+#: admin/views/dashboard.php:173
+#, php-format
+msgid "%d errors recorded in the last 7 days. Review Logs."
+msgstr ""
+
+#: admin/views/dashboard.php:174
+msgid "Open Logs"
+msgstr ""
+
+#: admin/views/dashboard.php:182
+msgid "Start here"
+msgstr ""
+
+#: admin/views/dashboard.php:184
+msgid "Before converting, scan your site to detect all WPBakery content."
+msgstr ""
+
+#: admin/views/dashboard.php:188
+#: admin/views/dashboard.php:325
+msgid "Run detection scan"
+msgstr ""
+
+#: admin/views/dashboard.php:195
+msgid "Overview"
+msgstr ""
+
+#: admin/views/dashboard.php:197
+msgid "Only posts containing WPBakery shortcodes will be shown after scan."
+msgstr ""
+
+#: admin/views/dashboard.php:201
+msgid "Selected post types"
+msgstr ""
+
+#: admin/views/dashboard.php:205
+msgid "VC posts with backups"
+msgstr ""
+
+#: admin/views/dashboard.php:209
+msgid "Last conversion"
+msgstr ""
+
+#: admin/views/dashboard.php:231
+msgid "Convert this type"
+msgstr ""
+
+#: admin/views/dashboard.php:234
+msgid "Settings"
+msgstr ""
+
+#: admin/views/dashboard.php:245
+#, php-format
+msgid "Overall: %1$d of %2$d converted (%3$d%%)."
+msgstr ""
+
+#: admin/views/dashboard.php:250
+msgid "Totals include only posts that contain WPBakery shortcodes (detected & cached)."
+msgstr ""
+
+#: admin/views/dashboard.php:256
+msgid "Recent activity"
+msgstr ""
+
+#: admin/views/dashboard.php:259
+msgid "The logs table is missing. Click below to create it."
+msgstr ""
+
+#: admin/views/dashboard.php:262
+msgid "Create logs table"
+msgstr ""
+
+#: admin/views/dashboard.php:308
+msgid "View all logs"
+msgstr ""
+
+#: admin/views/dashboard.php:309
+msgid "Download CSV"
+msgstr ""
+
+#: admin/views/dashboard.php:317
+msgid "Quick actions"
+msgstr ""
+
+#: admin/views/dashboard.php:320
+msgid "Open Convert screen"
+msgstr ""
+
+#: admin/views/dashboard.php:332
+msgid "Environment"
+msgstr ""
+
+#: admin/views/dashboard.php:334
+#, php-format
+msgid "WordPress: %s"
+msgstr ""
+
+#: admin/views/dashboard.php:335
+#, php-format
+msgid "PHP: %s"
+msgstr ""
+
+#: admin/views/dashboard.php:336
+#, php-format
+msgid "Site timezone: %s"
+msgstr ""
+
+#: admin/views/dashboard.php:337
+#, php-format
+msgid "Backup TTL: %d days"
+msgstr ""
+
+#: admin/views/dashboard.php:342
+msgid "Help"
+msgstr ""
+
+#: admin/views/dashboard.php:344
+msgid "Dashboard counts include only posts that contain WPBakery shortcodes (detected and cached). Use Tools → Scan to backfill detection."
+msgstr ""
+
+#: admin/views/revert.php:8
+msgid "Batch revert"
+msgstr ""
+
+#: admin/views/revert.php:34
+msgid "Revert by batch id or date"
+msgstr ""
+
+#: admin/views/revert.php:36
+msgid "Revert posts that were converted in a batch. Scope by batch id or by a converted-after date."
+msgstr ""
+
+#: admin/views/revert.php:40
+msgid "Batch id"
+msgstr ""
+
+#: admin/views/revert.php:45
+#: admin/views/revert.php:246
+msgid "Find recent batches"
+msgstr ""
+
+#: admin/views/revert.php:50
+msgid "View posts from this batch"
+msgstr ""
+
+#: admin/views/revert.php:53
+msgid "Converted after (optional)"
+msgstr ""
+
+#: admin/views/revert.php:59
+msgid "Start revert"
+msgstr ""
+
+#: admin/views/revert.php:63
+#, php-format
+msgid "Undo last batch (%s)"
+msgstr ""
+
+#: admin/views/revert.php:69
+msgid "Starting…"
+msgstr ""
+
+#: admin/views/revert.php:86
+msgid "Use a recent batch id for precise control, or a converted-after date to roll back a time window."
+msgstr ""
+
+#: admin/views/revert.php:87
+msgid "Reverting restores the original WPBakery content from backups created during conversion."
+msgstr ""
+
+#: admin/views/revert.php:88
+msgid "After revert, review posts that were edited since conversion to confirm content is as expected."
+msgstr ""
+
+#: admin/views/revert.php:89
+msgid "If you need to revert a specific post, use the revert option on that specific post."
+msgstr ""
+
+#: admin/views/revert.php:128
+msgid "Revert finished."
+msgstr ""
+
+#: admin/views/revert.php:156
+msgid "Please provide a batch id or a converted-after date."
+msgstr ""
+
+#: admin/views/revert.php:174
+msgid "No last batch recorded."
+msgstr ""
+
+#: admin/views/revert.php:215
+msgid "Loading…"
+msgstr ""
+
+#: admin/views/revert.php:224
+msgid "Could not load batches."
+msgstr ""
+
+#: admin/views/revert.php:232
+msgid "Select a batch…"
+msgstr ""
