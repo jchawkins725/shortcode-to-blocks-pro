@@ -5,24 +5,42 @@ defined('ABSPATH') || exit;
 
 class Converted {
     public static function render_page() {
+
         if (! current_user_can(Settings::required_capability())) {
-            wp_die(__('Insufficient permissions', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro'));
         }
 
         global $wpdb;
 
-        // sorting
-        $allowed_orderby = ['id','title','type','status','converted_ts','backup_ts','batch_id'];
-        $orderby = isset($_GET['orderby']) && in_array($_GET['orderby'], $allowed_orderby, true) ? $_GET['orderby'] : 'converted_ts';
-        $order   = (isset($_GET['order']) && strtolower($_GET['order']) === 'asc') ? 'ASC' : 'DESC';
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin filters, sorting, and paging.
+        $allowed_orderby = ['id', 'title', 'type', 'status', 'converted_ts', 'backup_ts', 'batch_id'];
+        $types           = \STB\admin\Admin::allowed_post_types();
+        $orderby         = 'converted_ts';
+        $order           = 'DESC';
+        $type            = '';
+        $paged           = isset($_GET['paged']) ? max(1, absint(wp_unslash($_GET['paged']))) : 1;
+        $search          = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
+        $batch_filter    = isset($_GET['batch_id']) ? sanitize_text_field(wp_unslash($_GET['batch_id'])) : '';
 
-        $types      = \STB\admin\Admin::allowed_post_types();
-        $type       = isset($_GET['type']) && in_array($_GET['type'], $types, true) ? sanitize_key($_GET['type']) : '';
-        $paged      = max(1, (int)($_GET['paged'] ?? 1));
+        if (isset($_GET['orderby'])) {
+            $requested_orderby = sanitize_key(wp_unslash($_GET['orderby']));
+            if (in_array($requested_orderby, $allowed_orderby, true)) {
+                $orderby = $requested_orderby;
+            }
+        }
+        if (isset($_GET['order']) && 'asc' === strtolower(sanitize_text_field(wp_unslash($_GET['order'])))) {
+            $order = 'ASC';
+        }
+        if (isset($_GET['type'])) {
+            $requested_type = sanitize_key(wp_unslash($_GET['type']));
+            if (in_array($requested_type, $types, true)) {
+                $type = $requested_type;
+            }
+        }
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
+
         $per_page   = 20;
         $offset     = ($paged - 1) * $per_page;
-        $search     = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-        $batch_filter = isset($_GET['batch_id']) ? sanitize_text_field($_GET['batch_id']) : '';
         $nonce      = wp_create_nonce('stbp_convert_nonce');
         // always point to admin.php and include the page slug explicitly
         $base_url = admin_url('admin.php');
@@ -75,11 +93,11 @@ class Converted {
         }
 
         if ($batch_filter !== '') {
-            $wheres[] = $wpdb->prepare("EXISTS (SELECT 1 FROM {$wpdb->postmeta} pmb WHERE pmb.post_id = p.ID AND pmb.meta_key = '_stbp_batch_id' AND pmb.meta_value = %s)", $batch_filter);
+            $wheres[] = "EXISTS (SELECT 1 FROM {$wpdb->postmeta} pmb WHERE pmb.post_id = p.ID AND pmb.meta_key = '_stbp_batch_id' AND pmb.meta_value = %s)";
+            $params[] = $batch_filter;
         }
 
         $where_sql = implode(' AND ', $wheres);
-        $params_where = $params; // snapshot BEFORE adding limit/offset
 
         // map sortable columns
         $orderby_sql = 'converted_ts';
@@ -93,42 +111,74 @@ class Converted {
         }
 
         // main query
-        $sql = "
-            SELECT 
-                p.ID,
-                p.post_type,
-                p.post_status,
-                MAX(p.post_title) AS post_title,
-                MAX(pm_batch.meta_value) AS batch_id,
-                UNIX_TIMESTAMP(MAX(p.post_modified_gmt)) AS converted_ts,
-                UNIX_TIMESTAMP(MAX(pm_backup.meta_value)) AS backup_ts
-            FROM {$wpdb->posts} p
-            LEFT JOIN {$wpdb->postmeta} pm_backup
-                ON pm_backup.post_id = p.ID AND pm_backup.meta_key = '_stbp_original_content_ts'
-            LEFT JOIN {$wpdb->postmeta} pm_batch
-                ON pm_batch.post_id = p.ID AND pm_batch.meta_key = '_stbp_batch_id'
-            WHERE {$convertedWhere} AND {$where_sql}
-            GROUP BY p.ID
-            ORDER BY {$orderby_sql} {$order}
-            LIMIT %d OFFSET %d
-        ";
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Admin listing query for converted posts with prepared filter values and whitelisted sorting.
         $rows = $wpdb->get_results(
-            $wpdb->prepare($sql, ...array_merge($params_where, [$per_page, $offset]))
+            $wpdb->prepare(
+                "
+                SELECT 
+                    p.ID,
+                    p.post_type,
+                    p.post_status,
+                    MAX(p.post_title) AS post_title,
+                    MAX(pm_batch.meta_value) AS batch_id,
+                    MAX(CAST(pm_converted.meta_value AS UNSIGNED)) AS converted_ts,
+                    MAX(CAST(pm_backup.meta_value AS UNSIGNED)) AS backup_ts
+                FROM {$wpdb->posts} p
+                LEFT JOIN {$wpdb->postmeta} pm_backup
+                    ON pm_backup.post_id = p.ID AND pm_backup.meta_key = '_stbp_original_content_ts'
+                LEFT JOIN {$wpdb->postmeta} pm_converted
+                    ON pm_converted.post_id = p.ID AND pm_converted.meta_key = '_stbp_converted_ts'
+                LEFT JOIN {$wpdb->postmeta} pm_batch
+                    ON pm_batch.post_id = p.ID AND pm_batch.meta_key = '_stbp_batch_id'
+                WHERE {$where_sql}
+                GROUP BY p.ID
+                ORDER BY {$orderby_sql} {$order}
+                LIMIT %d OFFSET %d
+                ",
+                ...array_merge($params, [$per_page, $offset])
+            )
         );
 
         // count for pagination
-        $count_sql = "
-            SELECT COUNT(DISTINCT p.ID)
-            FROM {$wpdb->posts} p
-            WHERE {$convertedWhere} AND {$where_sql}
-        ";
-        if (!empty($params_where)) {
-            $total = (int) $wpdb->get_var($wpdb->prepare($count_sql, ...$params_where));
+        if (! empty($params)) {
+            $total = (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "
+                    SELECT COUNT(DISTINCT p.ID)
+                    FROM {$wpdb->posts} p
+                    WHERE {$where_sql}
+                    ",
+                    ...$params
+                )
+            );
         } else {
-            $total = (int) $wpdb->get_var($count_sql);
+            $total = (int) $wpdb->get_var(
+                "
+                SELECT COUNT(DISTINCT p.ID)
+                FROM {$wpdb->posts} p
+                WHERE {$where_sql}
+                "
+            );
         }
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total_pages = max(1, (int) ceil($total / $per_page));
         $base = add_query_arg('page', (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted', admin_url('admin.php'));
+
+        $export_args = ['action' => 'stbp_export_converted'];
+        if ($type) {
+            $export_args['type'] = $type;
+        }
+        if ($search !== '') {
+            $export_args['s'] = $search;
+        }
+        if ($batch_filter !== '') {
+            $export_args['batch_id'] = $batch_filter;
+        }
+        $export_url = wp_nonce_url(
+            add_query_arg($export_args, admin_url('admin-post.php')),
+            'stbp_convert_nonce',
+            'stbp_convert_nonce_field'
+        );
         ?>
         <?php \STB\admin\Admin::render_tabs( (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted' ); ?>
         <div class="wrap">
@@ -147,12 +197,15 @@ class Converted {
                 <input type="search" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search title or ID','shortcode-to-blocks-pro'); ?>">
                 <input type="text" name="batch_id" value="<?php echo esc_attr($batch_filter); ?>" placeholder="<?php esc_attr_e('Batch ID','shortcode-to-blocks-pro'); ?>" style="width:140px">
                 <button class="button"><?php esc_html_e('Filter','shortcode-to-blocks-pro'); ?></button>
+                <a href="<?php echo esc_url($export_url); ?>" class="button button-secondary" style="margin-left:8px;">
+                    <?php esc_html_e('Download CSV', 'shortcode-to-blocks-pro'); ?>
+                </a>
                 <?php
                     // build a clean URL that just points to this page, no filters/sorting/pagination
                     $clear_url = add_query_arg('page', (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted', admin_url('admin.php'));
 
                     // show the button only when any filter/sort is active
-                    $has_filters = ($type || $search !== '' || $batch_filter !== '' || isset($_GET['orderby']) || isset($_GET['order']) || isset($_GET['paged']));
+                    $has_filters = ($type || $search !== '' || $batch_filter !== '' || 'converted_ts' !== $orderby || 'DESC' !== $order || $paged > 1);
                     ?>
 
                     <?php if ( $has_filters ): ?>
@@ -167,10 +220,10 @@ class Converted {
                 <div class="tablenav top">
                     <div class="alignleft actions bulkactions">
                         <select name="action" id="bulk-action-selector-top">
-                            <option value="-1"><?php esc_html_e('Bulk actions'); ?></option>
-                            <option value="revert"><?php esc_html_e('Revert'); ?></option>
+                            <option value="-1"><?php esc_html_e('Bulk actions', 'shortcode-to-blocks-pro'); ?></option>
+                            <option value="revert"><?php esc_html_e('Revert', 'shortcode-to-blocks-pro'); ?></option>
                         </select>
-                        <button class="button action"><?php esc_html_e('Apply'); ?></button>
+                        <button class="button action"><?php esc_html_e('Apply', 'shortcode-to-blocks-pro'); ?></button>
                     </div>
                 </div>
                 <table class="wp-list-table widefat fixed striped">
@@ -226,7 +279,7 @@ class Converted {
                                 <td><?php echo $r->backup_ts ? esc_html(date_i18n(get_option('date_format').' '.get_option('time_format'), (int)$r->backup_ts)) : '—'; ?></td>
                                 <td>
                                     <?php if (! empty($r->batch_id)) : ?>
-                                        <a href="<?php echo esc_url(add_query_arg(['page'=>'stbp_converted','batch_id'=>$r->batch_id], admin_url('admin.php'))); ?>"><?php echo esc_html($r->batch_id); ?></a>
+                                        <a href="<?php echo esc_url(add_query_arg(['page' => (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted', 'batch_id' => $r->batch_id], admin_url('admin.php'))); ?>"><?php echo esc_html($r->batch_id); ?></a>
                                     <?php else: ?>
                                         —
                                     <?php endif; ?>

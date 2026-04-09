@@ -19,6 +19,7 @@ add_action('init', function() {
 			if ($action !== 'stbp_bulk_convert') return $redirect_url;
 
 			$converted = 0;
+			$skipped   = 0;
 			// Generate a batch ID for this bulk operation (match handle_batch() fallback)
 			if (function_exists('wp_generate_uuid4')) {
 				$batch_id = wp_generate_uuid4();
@@ -27,6 +28,12 @@ add_action('init', function() {
 			}
 
 			foreach ($post_ids as $post_id) {
+				$post_id = absint($post_id);
+				if (! $post_id || ! current_user_can(Settings::required_capability()) || ! current_user_can('edit_post', $post_id)) {
+					$skipped++;
+					continue;
+				}
+
 				// Use Batch::convert_post if available
 				if (class_exists('STBP\\admin\\Batch') && method_exists('STBP\\admin\\Batch', 'convert_post')) {
 					$result = \STBP\admin\Batch::convert_post($post_id, $batch_id);
@@ -34,7 +41,7 @@ add_action('init', function() {
 						$converted++;
 					}
 				} else {
-					// Fallback: mark as converted (customize as needed)
+					// Fallback: only allow metadata changes for posts the current user can edit.
 					update_post_meta($post_id, '_stbp_converted', 1);
 					update_post_meta($post_id, '_stbp_batch_id', sanitize_text_field($batch_id));
 					$converted++;
@@ -43,7 +50,7 @@ add_action('init', function() {
 
 			// Log batch summary
 			if (class_exists('STBP\\includes\\Logger')) {
-				\STBP\includes\Logger::log('batch', 'success', 'Bulk action conversion finished for post type: ' . $pt . ', batch_id: ' . $batch_id . ', converted: ' . $converted . ' of ' . count($post_ids));
+				\STBP\includes\Logger::log('batch', 'success', 'Bulk action conversion finished for post type: ' . $pt . ', batch_id: ' . $batch_id . ', converted: ' . $converted . ' of ' . count($post_ids) . ', skipped: ' . $skipped);
 			}
 			// Update last batch option for revert screen
 			$now = time();
@@ -56,11 +63,15 @@ add_action('init', function() {
 			];
 			update_option('stbp_last_batch', $last, false);
 
+			// Add a nonce for the admin notice
+			$nonce = wp_create_nonce('stbp_bulk_notice');
 			// Add a query arg so you can show a notice and batch id
 			return add_query_arg([
 				'stbp_bulk_converted' => $converted,
 				'stbp_bulk_total' => count($post_ids),
+				'stbp_bulk_skipped' => $skipped,
 				'stbp_bulk_batch_id' => $batch_id,
+				'stbp_bulk_notice_nonce' => $nonce,
 			], $redirect_url);
 		}, 10, 3);
 	}
@@ -68,19 +79,38 @@ add_action('init', function() {
 
 // Show admin notice after bulk action
 add_action('admin_notices', function() {
-	if (!empty($_REQUEST['stbp_bulk_converted'])) {
+	if (
+		isset($_REQUEST['stbp_bulk_converted']) &&
+		isset($_REQUEST['stbp_bulk_total']) &&
+		!empty($_REQUEST['stbp_bulk_notice_nonce']) &&
+		wp_verify_nonce(sanitize_text_field(wp_unslash($_REQUEST['stbp_bulk_notice_nonce'])), 'stbp_bulk_notice')
+	) {
 		$converted = intval($_REQUEST['stbp_bulk_converted']);
 		$total = intval($_REQUEST['stbp_bulk_total']);
-		$batch_id = sanitize_text_field($_REQUEST['stbp_bulk_batch_id'] ?? '');
+		$skipped = isset($_REQUEST['stbp_bulk_skipped']) ? intval($_REQUEST['stbp_bulk_skipped']) : 0;
+		$batch_id = '';
+		if (isset($_REQUEST['stbp_bulk_batch_id'])) {
+			$batch_id = sanitize_text_field(wp_unslash($_REQUEST['stbp_bulk_batch_id']));
+		}
 		$screen = get_current_screen();
 		$post_type = $screen ? $screen->post_type : '';
+		$extra_note = $skipped > 0
+			? ' ' . sprintf(
+				/* translators: %d: number of items skipped due to permissions */
+				esc_html__('Skipped %d item(s) due to permissions.', 'shortcode-to-blocks-pro'),
+				$skipped
+			)
+			: '';
+
 		echo '<div class="notice notice-success is-dismissible"><p>'
 			. sprintf(
-				esc_html__('STBP: Converted %d of %d selected items for post type "%s". Batch ID: %s', 'shortcode-to-blocks-pro'),
-				$converted,
-				$total,
+				// translators: 1: Number converted, 2: Total selected, 3: Post type, 4: Batch ID, 5: Optional skipped note
+				esc_html__('STBP: Converted %1$d of %2$d selected items for post type "%3$s". Batch ID: %4$s%5$s', 'shortcode-to-blocks-pro'),
+				esc_html($converted),
+				esc_html($total),
 				esc_html($post_type),
-				esc_html($batch_id)
+				esc_html($batch_id),
+				esc_html($extra_note)
 			)
 			. '</p></div>';
 	}

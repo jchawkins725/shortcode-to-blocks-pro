@@ -50,13 +50,6 @@ add_action('plugins_loaded', function () {
         return; // bail — free plugin is missing
     }
 
-    // Load translations
-    load_plugin_textdomain(
-        'shortcode-to-blocks-pro',
-        false,
-        dirname(plugin_basename(STBP_FILE)) . '/languages'
-    );
-
     /* ---- Admin hooks — license settings always available ---- */
     if (is_admin()) {
         add_action('stb_register_settings', [\STBP\includes\License::class, 'register_settings']);
@@ -69,8 +62,8 @@ add_action('plugins_loaded', function () {
             add_action('admin_notices', function () {
                 echo '<div class="notice notice-warning is-dismissible"><p>';
                 printf(
-                    /* translators: %s = settings page URL */
-                    esc_html__('Shortcode to Blocks Pro: please %sactivate your license%s to unlock Pro features.', 'shortcode-to-blocks-pro'),
+                    // translators: 1: opening anchor tag, 2: closing anchor tag
+                    esc_html__('Shortcode to Blocks Pro: please %1$sactivate your license%2$s to unlock Pro features.', 'shortcode-to-blocks-pro'),
                     '<a href="' . esc_url(admin_url('admin.php?page=' . (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-settings')) . '">',
                     '</a>'
                 );
@@ -187,6 +180,7 @@ add_action('stbp_cron_purge_backups', function () {
             'posts_per_page' => $perpage,
             'paged'          => $paged,
             'no_found_rows'  => true,
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Intentional scheduled cleanup query against plugin-managed backup timestamp meta.
             'meta_query'     => [[
                 'key'     => '_stbp_original_content_ts',
                 'value'   => $cut,

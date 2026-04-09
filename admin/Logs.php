@@ -23,16 +23,16 @@ class Logs extends \WP_List_Table {
     /** Top-level renderer for the page */
    public static function render_logs_page() {
     if (! current_user_can(Settings::required_capability())) {
-        wp_die(__('Insufficient permissions', 'shortcode-to-blocks-pro'));
+        wp_die(esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro'));
     }
-    // show admin notice if redirected from install_logs()
-    if (isset($_GET['logs']) && $_GET['logs'] === 'installed') {
+    // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin notices and filters.
+    if (isset($_GET['logs']) && 'installed' === sanitize_key(wp_unslash($_GET['logs']))) {
         echo '<div class="notice notice-success is-dismissible" style="margin:12px 0;">';
-        echo '<p>' . esc_html__('Logs table has been installed or repaired (already existed).', 'shortcode-to-blocks-pro') . '</p>';
+        echo '<p>' . esc_html__('Logs table has been installed or repaired.', 'shortcode-to-blocks-pro') . '</p>';
         echo '</div>';
     }
     if (isset($_GET['logs_purged_all'])) {
-        $n = max(0, (int) $_GET['logs_purged_all']);
+        $n = absint(wp_unslash($_GET['logs_purged_all']));
         if ($n > 0) {
             echo '<div class="notice notice-success is-dismissible" style="margin:12px 0;"><p>'
             . esc_html__('All logs were purged.', 'shortcode-to-blocks-pro')
@@ -43,8 +43,8 @@ class Logs extends \WP_List_Table {
             . '</p></div>';
         }
     } elseif (isset($_GET['logs_purged'], $_GET['days'])) {
-        $n = max(0, (int) $_GET['logs_purged']);
-        $d = max(0, (int) $_GET['days']);
+        $n = absint(wp_unslash($_GET['logs_purged']));
+        $d = absint(wp_unslash($_GET['days']));
         if ($n > 0) {
             printf(
                 '<div class="notice notice-success is-dismissible" style="margin:12px 0;"><p>%s</p></div>',
@@ -57,12 +57,13 @@ class Logs extends \WP_List_Table {
         } else {
             printf(
                 '<div class="notice notice-info is-dismissible" style="margin:12px 0;"><p>%s</p></div>',
-                esc_html( sprintf( __('No logs older than %d days to purge.', 'shortcode-to-blocks-pro'), $d ) )
+                esc_html( sprintf(
+                    /* translators: %d: number of days */
+                    __('No logs older than %d days to purge.', 'shortcode-to-blocks-pro'), $d ) )
             );
         }
     }
     $page_slug = (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-logs';
-    $nonce     = wp_create_nonce('stbp_convert_nonce');
 
     // Action buttons (routes already implemented in Tools.php / AJAX)
     $export_url  = wp_nonce_url(
@@ -78,11 +79,11 @@ class Logs extends \WP_List_Table {
         'stbp_convert_nonce','stbp_convert_nonce_field'
     );
 
-    // read filters
-    $action  = isset($_GET['log_action']) ? sanitize_text_field($_GET['log_action']) : '';
-    $status  = isset($_GET['log_status']) ? sanitize_text_field($_GET['log_status']) : '';
-    $search  = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-    $paged   = max(1, (int)($_GET['paged'] ?? 1));
+    $action = isset($_GET['log_action']) ? sanitize_key(wp_unslash($_GET['log_action'])) : '';
+    $status = isset($_GET['log_status']) ? sanitize_key(wp_unslash($_GET['log_status'])) : '';
+    $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
+    $paged  = isset($_GET['paged']) ? max(1, absint(wp_unslash($_GET['paged']))) : 1;
+    // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
     // table
     $list_table = new self();
@@ -102,12 +103,7 @@ class Logs extends \WP_List_Table {
     <div class="wrap">
         <h1 class="wp-heading-inline"><?php esc_html_e('Logs', 'shortcode-to-blocks-pro'); ?></h1>
         <?php
-        global $wpdb;
-        $table = $wpdb->prefix . 'stbp_logs';
-        $exists = $wpdb->get_var($wpdb->prepare(
-        "SHOW TABLES LIKE %s", $wpdb->esc_like($table)
-        ));
-        if ($exists !== $table) {
+        if (! Logger::table_exists()) {
             $install_url = wp_nonce_url(
                 admin_url('admin-ajax.php?action=stbp_install_logs'),
                 'stbp_convert_nonce',
@@ -221,67 +217,41 @@ class Logs extends \WP_List_Table {
         ];
     }
 
-    /** Fetch + paginate items from Logger (or the logs table) */
+    /** Fetch + paginate items from Logger */
     public function prepare_items($args = []) {
-        global $wpdb;
-
         $per_page = 20;
-        $paged    = max(1, (int)($args['paged'] ?? ($_GET['paged'] ?? 1)));
-        $offset   = ($paged - 1) * $per_page;
 
-        $search   = sanitize_text_field($args['search'] ?? ($_GET['s'] ?? ''));
-        $action   = sanitize_text_field($args['action'] ?? ($_GET['log_action'] ?? ''));
-        $status   = sanitize_text_field($args['status'] ?? ($_GET['log_status'] ?? ''));
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin list-table filters and sorting.
+        $paged   = max(1, absint($args['paged'] ?? (isset($_GET['paged']) ? wp_unslash($_GET['paged']) : 1)));
+        $search  = isset($args['search']) ? sanitize_text_field((string) $args['search']) : (isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '');
+        $action  = isset($args['action']) ? sanitize_key((string) $args['action']) : (isset($_GET['log_action']) ? sanitize_key(wp_unslash($_GET['log_action'])) : '');
+        $status  = isset($args['status']) ? sanitize_key((string) $args['status']) : (isset($_GET['log_status']) ? sanitize_key(wp_unslash($_GET['log_status'])) : '');
+        $orderby = isset($_GET['orderby']) ? sanitize_key(wp_unslash($_GET['orderby'])) : 'created_at';
+        $order   = (isset($_GET['order']) && 'asc' === strtolower(sanitize_text_field(wp_unslash($_GET['order'])))) ? 'ASC' : 'DESC';
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-        // Build SQL
-        $table  = $wpdb->prefix . 'stbp_logs';
-        $where  = '1=1';
-        $params = [];
+        $offset  = ($paged - 1) * $per_page;
+        $results = Logger::get_logs([
+            'limit'   => $per_page,
+            'offset'  => $offset,
+            'search'  => $search,
+            'action'  => $action,
+            'status'  => $status,
+            'orderby' => $orderby,
+            'order'   => $order,
+        ]);
 
-        if ($search !== '') {
-            $where .= ' AND (message LIKE %s)';
-            $params[] = '%' . $wpdb->esc_like($search) . '%';
-        }
-        if ($action !== '') {
-            $where .= ' AND action = %s';
-            $params[] = sanitize_key($action);
-        }
-        if ($status !== '') {
-            $where .= ' AND status = %s';
-            $params[] = sanitize_key($status);
-        }
-
-        // Sorting
-        $orderby = isset($_GET['orderby']) ? sanitize_key($_GET['orderby']) : 'created_at';
-        $order   = (isset($_GET['order']) && strtolower($_GET['order']) === 'asc') ? 'ASC' : 'DESC';
-        $allowed = ['created_at','action','status'];
-        if (! in_array($orderby, $allowed, true)) { $orderby = 'created_at'; }
-
-        // Total
-        $total = (int) $wpdb->get_var(
-            $params ? $wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE {$where}", ...$params)
-                    : "SELECT COUNT(*) FROM {$table} WHERE {$where}"
-        );
+        $total             = (int) ($results['total'] ?? 0);
+        $rows              = ! empty($results['rows']) && is_array($results['rows']) ? $results['rows'] : [];
         $this->items_total = $total;
 
-        // Rows
-        $sql  = "SELECT created_at, user_id, post_id, action, status, message
-                 FROM {$table}
-                 WHERE {$where}
-                 ORDER BY {$orderby} {$order}
-                 LIMIT %d OFFSET %d";
-        $rows = $wpdb->get_results(
-            $wpdb->prepare($sql, ...array_merge($params, [$per_page, $offset])),
-            ARRAY_A
-        );
-
         $this->_column_headers = [$this->get_columns(), [], $this->get_sortable_columns()];
-        $this->items = array_map([$this,'map_row'], $rows ?: []);
+        $this->items           = array_map([$this, 'map_row'], $rows);
 
         $this->set_pagination_args([
             'total_items' => $total,
             'per_page'    => $per_page,
-            'total_pages' => max(1, (int)ceil($total / $per_page)),
+            'total_pages' => max(1, (int) ceil($total / $per_page)),
         ]);
     }
 

@@ -11,10 +11,10 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 /**
  * Configuration (matches your codebase)
  */
-define( 'STBP_OPTION_RETAIN_DATA', 'stbp_retain_data_on_uninstall' ); // bool: keep data on uninstall (default true)
-define( 'STBP_OPTION_PREFIX',      'stbp_' );                          // your options/transients prefix
-define( 'STBP_LOGS_TABLE',         'stbp_logs' );                      // {$wpdb->prefix}stbp_logs
-define( 'STBP_CRON_HOOK',          'stbp_cron_purge_backups' );        // scheduled single-event hook
+define( 'STBP_OPTION_RETAIN_DATA', 'stb_retain_data_on_uninstall' );  // shared retain-data option from the free plugin
+define( 'STBP_OPTION_PREFIX',      'stbp_' );                           // your options/transients prefix
+define( 'STBP_LOGS_TABLE',         'stbp_logs' );                       // {$wpdb->prefix}stbp_logs
+define( 'STBP_CRON_HOOK',          'stbp_cron_purge_backups' );         // scheduled single-event hook
 
 // Post meta keys set by the converter.
 $stbp_meta_keys = array(
@@ -23,18 +23,18 @@ $stbp_meta_keys = array(
 	'_stbp_converted',
 	'_stbp_converted_ts',
 	'_stbp_has_vc',
+	'_stbp_batch_id',
 );
 
 /**
  * Should we retain data? (default: keep)
  *
- * Site owners can set stbp_retain_data_on_uninstall = 0 to fully purge.
+ * The Pro add-on follows the shared free-plugin setting `stb_retain_data_on_uninstall`.
  *
  * @return bool True to keep data; false to delete data.
  */
 function stbp_should_retain_data() {
-	$opt = get_option( STBP_OPTION_RETAIN_DATA, true );
-	return (bool) $opt;
+	return (bool) get_option( STBP_OPTION_RETAIN_DATA, true );
 }
 
 /**
@@ -56,6 +56,7 @@ function stbp_delete_options_and_transients() {
 	$table = $wpdb->options;
 
 	// Delete options with our prefix.
+	// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- One-time uninstall cleanup query.
 	$wpdb->query(
 		$wpdb->prepare( "DELETE FROM {$table} WHERE option_name LIKE %s", $like )
 	);
@@ -70,6 +71,7 @@ function stbp_delete_options_and_transients() {
 	$wpdb->query(
 		$wpdb->prepare( "DELETE FROM {$table} WHERE option_name LIKE %s", '_transient_timeout_' . $t_like )
 	);
+	// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 }
 
 /**
@@ -78,7 +80,7 @@ function stbp_delete_options_and_transients() {
 function stbp_drop_tables() {
 	global $wpdb;
 	$table = $wpdb->prefix . STBP_LOGS_TABLE;
-	$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- One-time uninstall cleanup query.
 }
 
 /**
@@ -110,9 +112,9 @@ if ( is_multisite() ) {
 		return;
 	}
 
-	$site_ids = get_sites( array( 'fields' => 'ids' ) );
-	foreach ( $site_ids as $site_id ) {
-		switch_to_blog( (int) $site_id );
+	$stbp_site_ids = get_sites( array( 'fields' => 'ids' ) );
+	foreach ( $stbp_site_ids as $stbp_site_id ) {
+		switch_to_blog( (int) $stbp_site_id );
 		stbp_purge_blog( $stbp_meta_keys );
 		restore_current_blog();
 	}

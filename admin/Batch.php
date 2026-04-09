@@ -15,6 +15,9 @@ class Batch {
         if (! $post) {
             return false;
         }
+        if (! self::can_edit_target_post((int) $post_id)) {
+            return new \WP_Error('forbidden', __('Insufficient permissions to edit this post.', 'shortcode-to-blocks-pro'));
+        }
         // Only allow post types defined in settings
         if (class_exists('STBP\\admin\\Settings')) {
             $allowed = \STBP\admin\Settings::get()['post_types'] ?? ['post', 'page'];
@@ -94,17 +97,28 @@ class Batch {
     }
 
     /**
+     * Check whether the current user may edit a specific post through Pro tools.
+     */
+    private static function can_edit_target_post(int $post_id): bool {
+        return $post_id > 0
+            && current_user_can(Settings::required_capability())
+            && current_user_can('edit_post', $post_id);
+    }
+
+    /**
      * Render the convert admin page.
      * Provides $types, $counts, $nonce, and $last_batch to the view.
      */
     public static function render_convert_page() {
-        $types  = \STB\admin\Admin::allowed_post_types();
-        $pref   = isset($_GET['type']) ? sanitize_key($_GET['type']) : '';
+        $types = \STB\admin\Admin::allowed_post_types();
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin page preselection from the URL.
+        $pref  = isset($_GET['type']) ? sanitize_key(wp_unslash($_GET['type'])) : '';
         $counts = [];
 
         global $wpdb;
         foreach ($types as $t) {
-            // VC-only total via _stbp_has_vc flag
+            // VC-only total via _stbp_has_vc flag.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin count query for the convert screen.
             $total = (int) ($wpdb->get_var($wpdb->prepare("
               SELECT COUNT(DISTINCT p.ID)
               FROM {$wpdb->posts} p
@@ -125,7 +139,7 @@ class Batch {
     }
     public static function render_revert_page() {
         if (! current_user_can(Settings::required_capability())) {
-            wp_die(__('Insufficient permissions', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro'));
         }
         // Nonce for AJAX
         $nonce = wp_create_nonce('stbp_convert_nonce');
@@ -144,19 +158,24 @@ class Batch {
             wp_send_json_error('insufficient permissions', 403);
         }
 
-        $allowed  = \STB\admin\Admin::allowed_post_types();
-        $selected = array_values(array_intersect((array)($_POST['post_types'] ?? []), $allowed));
+        $allowed      = \STB\admin\Admin::allowed_post_types();
+        $posted_types  = isset($_POST['post_types']) ? array_map('sanitize_key', (array) wp_unslash($_POST['post_types'])) : [];
+        $selected      = array_values(array_intersect($posted_types, $allowed));
         if (empty($selected)) {
             wp_send_json_error('no post types selected', 400);
         }
 
-        $dry_run  = ! empty($_POST['dry_run']);
-        $per_page = isset($_POST['per_page']) ? max(5, min(200, (int) $_POST['per_page'])) : 20;
-        $offset   = max(0, (int) ($_POST['offset'] ?? 0));
-        $type     = sanitize_key($_POST['current_type'] ?? $selected[0]);
+        $dry_run = ! empty($_POST['dry_run']);
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized immediately via wp_unslash() and absint().
+        $posted_per_page = isset($_POST['per_page']) ? wp_unslash($_POST['per_page']) : 20;
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized immediately via wp_unslash() and absint().
+        $posted_offset   = isset($_POST['offset']) ? wp_unslash($_POST['offset']) : 0;
+        $per_page        = max(5, min(200, absint($posted_per_page)));
+        $offset          = absint($posted_offset);
+        $type            = isset($_POST['current_type']) ? sanitize_key(wp_unslash($_POST['current_type'])) : $selected[0];
 
         // batch id bookkeeping
-        $batch_id = sanitize_text_field($_POST['batch_id'] ?? '');
+        $batch_id = isset($_POST['batch_id']) ? sanitize_text_field(wp_unslash($_POST['batch_id'])) : '';
         if ($batch_id === '') {
             // generate when missing (first tick)
             if (function_exists('wp_generate_uuid4')) {
@@ -197,6 +216,7 @@ class Batch {
                 update_option('stbp_last_batch', $last, false);
             }
             $finish_data = [
+                /* translators: %d: number of items limit reached */
                 'message'   => sprintf(__('Reached limit of %d items.', 'shortcode-to-blocks-pro'), $state['limit']),
                 'processed' => 0,
                 'done'      => true,
@@ -228,8 +248,10 @@ class Batch {
         $q = new \WP_Query([
             'post_type'               => $type,
             'post_status'             => 'publish',
+            // phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Intentional filtering on plugin-managed VC flag meta.
             'meta_key'                => '_stbp_has_vc',
             'meta_value'              => '1',
+            // phpcs:enable WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value
             'posts_per_page'          => min($per_page, $remaining), // clamp to avoid overshooting cap
             'offset'                  => $offset,
             'fields'                  => 'ids',
@@ -292,8 +314,23 @@ class Batch {
         }
 
         $processed = 0;
+        $skipped   = 0;
 
         foreach ($q->posts as $pid) {
+            if (! self::can_edit_target_post((int) $pid)) {
+                $skipped++;
+                if ($dry_run) {
+                    $t =& $report['by_type'][$type];
+                    if (! isset($t)) {
+                        $t = ['would_change' => 0, 'no_change' => 0, 'errors' => 0];
+                    }
+                    $t['errors']++;
+                } else {
+                    Logger::log('batch', 'info', 'Skipped unauthorized post in batch conversion', $pid);
+                }
+                continue;
+            }
+
             $post = get_post($pid);
             if (! $post) {
                 if ($dry_run) {
@@ -399,6 +436,7 @@ class Batch {
         $tick_data = [
             'message'     => $dry_run ? "Dry run processed {$processed}" : "Processed {$processed} posts",
             'processed'   => $processed,
+            'skipped'     => $skipped,
             'next_type'   => $hit_cap ? null : $type,
             'next_offset' => $hit_cap ? null : ($offset + $per_page),
             'batch_id'    => $batch_id,
@@ -429,12 +467,18 @@ class Batch {
             wp_send_json_error('insufficient permissions', 403);
         }
 
-        $batch_id = sanitize_text_field($_POST['batch_id'] ?? '');
-        $per_page = isset($_POST['per_page']) ? max(5, min(200, (int) $_POST['per_page'])) : 20;
-        $offset   = max(0, (int) ($_POST['offset'] ?? 0));
+        $batch_id = isset($_POST['batch_id']) ? sanitize_text_field(wp_unslash($_POST['batch_id'])) : '';
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized immediately via wp_unslash() and absint().
+        $posted_per_page = isset($_POST['per_page']) ? wp_unslash($_POST['per_page']) : 20;
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized immediately via wp_unslash() and absint().
+        $posted_offset   = isset($_POST['offset']) ? wp_unslash($_POST['offset']) : 0;
+        $per_page        = max(5, min(200, absint($posted_per_page)));
+        $offset          = absint($posted_offset);
 
         // allow scoped reverts by batch id *or* by "converted after" timestamp
-        $after_ts = isset($_POST['converted_after']) ? (int) $_POST['converted_after'] : 0;
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized immediately via wp_unslash() and absint().
+        $posted_after_ts = isset($_POST['converted_after']) ? wp_unslash($_POST['converted_after']) : 0;
+        $after_ts        = absint($posted_after_ts);
 
         if ($batch_id === '' && $after_ts <= 0) {
             wp_send_json_error('missing scope: provide batch_id or converted_after', 400);
@@ -459,6 +503,7 @@ class Batch {
             'no_found_rows'           => true,
             'posts_per_page'          => $per_page,
             'offset'                  => $offset,
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Intentional revert filtering on plugin-managed backup/conversion meta.
             'meta_query'              => $meta_query,
             'update_post_meta_cache'  => false,
             'update_post_term_cache'  => false,
@@ -467,6 +512,12 @@ class Batch {
         $processed = 0;
         $skipped = 0;
         foreach ($q->posts as $pid) {
+            if (! self::can_edit_target_post((int) $pid)) {
+                $skipped++;
+                Logger::log('batch-revert', 'info', 'Skipped unauthorized post in batch revert', $pid);
+                continue;
+            }
+
             $orig = get_post_meta($pid, '_stbp_original_content', true);
             if ($orig === '' || $orig === null) { 
                 // Post was already reverted individually
@@ -511,19 +562,25 @@ class Batch {
         // List up to N recent batches (by latest converted_ts), with post counts
         $limit = 50; // reasonable cap
         // Join postmeta twice: once for batch id, once to read converted_ts for ordering
-        $sql = "
-            SELECT b.meta_value AS batch_id,
-                COUNT(*)     AS post_count,
-                MAX(CASE WHEN t.meta_key = '_stbp_converted_ts' THEN CAST(t.meta_value AS UNSIGNED) ELSE 0 END) AS last_ts
-            FROM {$wpdb->postmeta} b
-            LEFT JOIN {$wpdb->postmeta} t
-                ON t.post_id = b.post_id AND t.meta_key = '_stbp_converted_ts'
-            WHERE b.meta_key = '_stbp_batch_id'
-            GROUP BY b.meta_value
-            ORDER BY last_ts DESC
-            LIMIT %d
-        ";
-        $rows = $wpdb->get_results($wpdb->prepare($sql, $limit), ARRAY_A);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Admin batch listing query for revert tools.
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "
+                SELECT b.meta_value AS batch_id,
+                    COUNT(*)     AS post_count,
+                    MAX(CASE WHEN t.meta_key = '_stbp_converted_ts' THEN CAST(t.meta_value AS UNSIGNED) ELSE 0 END) AS last_ts
+                FROM {$wpdb->postmeta} b
+                LEFT JOIN {$wpdb->postmeta} t
+                    ON t.post_id = b.post_id AND t.meta_key = '_stbp_converted_ts'
+                WHERE b.meta_key = '_stbp_batch_id'
+                GROUP BY b.meta_value
+                ORDER BY last_ts DESC
+                LIMIT %d
+                ",
+                $limit
+            ),
+            ARRAY_A
+        );
 
         $out = array_map(function($r){
             return [
@@ -541,7 +598,7 @@ class Batch {
             wp_send_json_error('insufficient permissions', 403);
         }
 
-        $ids = array_map('intval', (array) ($_POST['ids'] ?? []));
+        $ids = isset($_POST['ids']) ? array_map('intval', (array) wp_unslash($_POST['ids'])) : [];
         $ids = array_values(array_filter($ids));
         if (empty($ids)) {
             wp_send_json_error('no posts selected', 400);
@@ -569,8 +626,13 @@ class Batch {
      * Helper: revert one post.
      */
     private function revert_single_post(int $post_id) {
+        if (! self::can_edit_target_post($post_id)) {
+            return new \WP_Error('forbidden', __('Insufficient permissions to edit this post.', 'shortcode-to-blocks-pro'));
+        }
+
         $backup = get_post_meta($post_id, '_stbp_original_content', true);
         if ($backup === '' || $backup === null) {
+            /* translators: %d: post ID */
             return new \WP_Error('no_backup', sprintf(__('No backup found for post ID %d','shortcode-to-blocks-pro'), $post_id));
         }
 
@@ -586,6 +648,7 @@ class Batch {
         delete_post_meta($post_id, '_stbp_converted_ts');
         delete_post_meta($post_id, '_stbp_original_content');
         delete_post_meta($post_id, '_stbp_original_content_ts');
+        delete_post_meta($post_id, '_stbp_batch_id');
 
         // set VC flag so it’s eligible for conversion again
         update_post_meta($post_id, '_stbp_has_vc', '1');
@@ -607,8 +670,8 @@ class Batch {
             wp_send_json_error('insufficient permissions', 403);
         }
 
-        $parent_type = sanitize_key($_POST['parent_type'] ?? '');
-        $parent_id = intval($_POST['parent_id'] ?? 0);
+        $parent_type = isset($_POST['parent_type']) ? sanitize_key(wp_unslash($_POST['parent_type'])) : '';
+        $parent_id   = isset($_POST['parent_id']) ? intval(wp_unslash($_POST['parent_id'])) : 0;
         
         if (empty($parent_type) || $parent_id <= 0) {
             wp_send_json_error('Parent type and ID are required', 400);
@@ -619,6 +682,9 @@ class Batch {
         if (!$parent_post || $parent_post->post_type !== $parent_type) {
             wp_send_json_error('Invalid parent post or type mismatch', 400);
         }
+        if (! self::can_edit_target_post($parent_id)) {
+            wp_send_json_error('insufficient permissions for parent post', 403);
+        }
 
         // Verify post type is allowed
         $allowed = \STB\admin\Admin::allowed_post_types();
@@ -627,7 +693,7 @@ class Batch {
         }
 
         // Generate batch ID
-        $batch_id = sanitize_text_field($_POST['batch_id'] ?? '');
+        $batch_id = isset($_POST['batch_id']) ? sanitize_text_field(wp_unslash($_POST['batch_id'])) : '';
         if ($batch_id === '') {
             if (function_exists('wp_generate_uuid4')) {
                 $batch_id = wp_generate_uuid4();
@@ -642,16 +708,21 @@ class Batch {
         // Include the parent itself
         array_unshift($post_ids, $parent_id);
         
-        // Filter to only posts that have VC content
-        $vc_post_ids = [];
+        // Filter to only editable posts that have VC content
+        $vc_post_ids            = [];
+        $skipped_unauthorized   = 0;
         foreach ($post_ids as $post_id) {
+            if (! self::can_edit_target_post((int) $post_id)) {
+                $skipped_unauthorized++;
+                continue;
+            }
             if (get_post_meta($post_id, '_stbp_has_vc', true) === '1') {
                 $vc_post_ids[] = $post_id;
             }
         }
 
         if (empty($vc_post_ids)) {
-            wp_send_json_error('No posts with WPBakery content found in this tree', 400);
+            wp_send_json_error('No editable posts with WPBakery content found in this tree', 400);
         }
 
         $dry_run = !empty($_POST['dry_run']);
@@ -735,6 +806,7 @@ class Batch {
                 'message'      => $message,
                 'processed'    => $processed,
                 'total_found'  => count($vc_post_ids),
+                'skipped'      => $skipped_unauthorized,
                 'batch_id'     => $batch_id,
                 'parent_id'    => $parent_id,
                 'errors'       => $errors,
@@ -779,6 +851,7 @@ class Batch {
                 'message'     => $message,
                 'processed'   => $processed,
                 'total_found' => count($vc_post_ids),
+                'skipped'     => $skipped_unauthorized,
                 'batch_id'    => $batch_id,
                 'parent_id'   => $parent_id,
                 'errors'      => $errors,
@@ -847,26 +920,26 @@ class Batch {
      */
     public function download_parent_dry_run_csv() {
         if (! isset($_GET['stbp_convert_nonce_field']) || ! check_admin_referer('stbp_convert_nonce', 'stbp_convert_nonce_field')) {
-            wp_die(__('Invalid nonce', 'shortcode-to-blocks-pro'), 403);
+            wp_die(esc_html__('Invalid nonce', 'shortcode-to-blocks-pro'), 403);
         }
         if (! current_user_can(Settings::required_capability())) {
-            wp_die(__('Insufficient permissions', 'shortcode-to-blocks-pro'), 403);
+            wp_die(esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro'), 403);
         }
 
-        $batch_id = sanitize_text_field($_GET['batch_id'] ?? '');
+        $batch_id = isset($_GET['batch_id']) ? sanitize_text_field(wp_unslash($_GET['batch_id'])) : '';
         if (empty($batch_id)) {
-            wp_die(__('Missing batch ID', 'shortcode-to-blocks-pro'), 400);
+            wp_die(esc_html__('Missing batch ID', 'shortcode-to-blocks-pro'), 400);
         }
 
         $report_key = $this->get_report_store_key($batch_id);
         $report = get_transient($report_key);
         
         if (!$report || !is_array($report)) {
-            wp_die(__('Dry run report not found or expired. Please run the dry run again.', 'shortcode-to-blocks-pro'), 404);
+            wp_die(esc_html__('Dry run report not found or expired. Please run the dry run again.', 'shortcode-to-blocks-pro'), 404);
         }
 
         // Generate CSV content
-        $filename = 'stbp-parent-dryrun-' . $batch_id . '-' . date('Y-m-d-H-i-s') . '.csv';
+        $filename = 'stbp-parent-dryrun-' . $batch_id . '-' . gmdate('Y-m-d-H-i-s') . '.csv';
         
         // Set headers for CSV download
         header('Content-Type: text/csv; charset=utf-8');
@@ -915,12 +988,11 @@ class Batch {
                     $post_data['depth'] ?? 0,
                     $post_data['would_change'] ?? 'no',
                     $post_data['permalink'] ?? '',
-                    date('Y-m-d H:i:s', $report['started_at'] ?? time())
+                    gmdate('Y-m-d H:i:s', (int) ($report['started_at'] ?? time()))
                 ]);
             }
         }
 
-        fclose($output);
         exit;
     }
 }

@@ -60,6 +60,7 @@ defined('ABSPATH') || exit;
 
             <?php if (!empty($last_batch['id'])): ?>
               <button id="stbp-undo-last" class="button"><?php
+                // translators: %s: Batch ID
                 echo esc_html(sprintf(__('Undo last batch (%s)', 'shortcode-to-blocks-pro'), $last_batch['id']));
               ?></button>
             <?php endif; ?>

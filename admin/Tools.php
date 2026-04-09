@@ -19,10 +19,10 @@ class Tools {
 
     public function install_logs() {
         if (! isset($_GET['stbp_convert_nonce_field']) || ! check_ajax_referer('stbp_convert_nonce','stbp_convert_nonce_field', false)) {
-            wp_die(__('Invalid nonce', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Invalid nonce', 'shortcode-to-blocks-pro'));
         }
         if (! current_user_can(Settings::tools_capability())) {
-            wp_die(__('Insufficient permissions', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro'));
         }
         if (! class_exists('\STBP\includes\Logger')) {
             require_once STBP_PATH . 'includes/Logger.php';
@@ -100,16 +100,24 @@ class Tools {
         <h1><?php esc_html_e('Tools', 'shortcode-to-blocks-pro'); ?></h1>
 
         <?php
-        // admin notices for this page
-        if (isset($_GET['purged_backups'])) {
+        // admin notices for this page (with nonce verification)
+        $nonce_action = 'stbp_convert_nonce';
+        $nonce_value  = isset($_GET['stbp_convert_nonce_field']) ? sanitize_text_field(wp_unslash($_GET['stbp_convert_nonce_field'])) : '';
+        $nonce_valid  = ! empty($nonce_value) && wp_verify_nonce($nonce_value, $nonce_action);
+
+        if (isset($_GET['purged_backups']) && $nonce_valid) {
             $n   = (int) $_GET['purged_backups'];
             $all = !empty($_GET['all']);
             $msg = $all
                 ? __('All backups were purged.', 'shortcode-to-blocks-pro')
-                : sprintf(_n('%d backup was purged.', '%d backups were purged.', $n, 'shortcode-to-blocks-pro'), $n);
+                : sprintf(
+                    /* translators: %d: number of backups purged */
+                    _n('%d backup was purged.', '%d backups were purged.', $n, 'shortcode-to-blocks-pro'),
+                    $n
+                );
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($msg) . '</p></div>';
         }
-        if (isset($_GET['scan']) && $_GET['scan'] === 'done') {
+        if (isset($_GET['scan']) && $_GET['scan'] === 'done' && $nonce_valid) {
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Detection scan complete.', 'shortcode-to-blocks-pro') . '</p></div>';
         }
         ?>
@@ -168,8 +176,9 @@ class Tools {
                     <?php
                         if ($ttl > 0) {
                             printf(
-                            esc_html__('“Purge old backups” deletes backups older than %d days. Nothing is deleted automatically unless you enable the 1-year auto-purge in Settings.', 'shortcode-to-blocks-pro'),
-                            $ttl
+                                /* translators: %d: number of days */
+                                esc_html__('“Purge old backups” deletes backups older than %d days. Nothing is deleted automatically unless you enable the 1-year auto-purge in Settings.', 'shortcode-to-blocks-pro'),
+                                esc_html($ttl)
                             );
                         } else {
                             echo esc_html__('Backups are kept until you purge them. “Purge old backups” is disabled when the threshold is 0. You can still use “Purge all backups”.', 'shortcode-to-blocks-pro');
@@ -234,10 +243,10 @@ class Tools {
 
     public function purge_backups() {
         if (! isset($_GET['stbp_convert_nonce_field']) || ! check_ajax_referer('stbp_convert_nonce','stbp_convert_nonce_field', false)) {
-            wp_die(__('Invalid nonce', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Invalid nonce', 'shortcode-to-blocks-pro'));
         }
         if (! current_user_can(Settings::tools_capability())) {
-            wp_die(__('Insufficient permissions', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro'));
         }
 
         $purged    = 0;
@@ -249,6 +258,7 @@ class Tools {
             'post_type'      => 'any',
             'post_status'    => 'any',
             'posts_per_page' => -1,
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Intentional purge query against plugin-managed backup meta.
             'meta_key'       => '_stbp_original_content',
             'fields'         => 'ids',
             'no_found_rows'  => true,
@@ -279,10 +289,10 @@ class Tools {
 
     public function purge_logs() {
         if (! isset($_GET['stbp_convert_nonce_field']) || ! check_ajax_referer('stbp_convert_nonce','stbp_convert_nonce_field', false)) {
-            wp_die(__('Invalid nonce', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Invalid nonce', 'shortcode-to-blocks-pro'));
         }
         if (! current_user_can(Settings::tools_capability())) {
-            wp_die(__('Insufficient permissions', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro'));
         }
         $all  = ! empty($_GET['all']);
         $days = isset($_GET['days']) ? max(0, (int) $_GET['days']) : 14;
@@ -302,10 +312,10 @@ class Tools {
 
     public function export_logs() {
         if (! isset($_GET['stbp_convert_nonce_field']) || ! check_admin_referer('stbp_convert_nonce','stbp_convert_nonce_field')) {
-            wp_die(__('Invalid nonce', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Invalid nonce', 'shortcode-to-blocks-pro'));
         }
         if (! current_user_can(Settings::required_capability())) {
-            wp_die(__('Insufficient permissions', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro'));
         }
         Logger::export_csv(); // exits
     }
@@ -313,7 +323,8 @@ class Tools {
     /** Chunked scanner: flags `_stbp_has_vc` across allowed types, 100 posts/tick */
     public function scan_vc_batch() {
         // support both JSON (in-page) and HTML fallback
-        $nonce = isset($_REQUEST['stbp_convert_nonce_field']) ? $_REQUEST['stbp_convert_nonce_field'] : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This request explicitly verifies the nonce below.
+        $nonce = isset($_REQUEST['stbp_convert_nonce_field']) ? sanitize_text_field(wp_unslash($_REQUEST['stbp_convert_nonce_field'])) : '';
         if ( ! wp_verify_nonce( $nonce, 'stbp_convert_nonce' ) ) {
             wp_die( esc_html__('Invalid nonce', 'shortcode-to-blocks-pro') );
         }
@@ -321,15 +332,15 @@ class Tools {
             wp_die( esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro') );
         }
 
-        $json_mode = !empty($_GET['json']); // if present, we return wp_send_json_*
+        $json_mode = ! empty($_GET['json']); // if present, we return wp_send_json_*
 
         $allowed   = \STB\admin\Admin::allowed_post_types();
         $per_page  = 100;
-        $offset    = max(0, (int) ($_GET['offset'] ?? 0));
+        $offset    = isset($_GET['offset']) ? max(0, absint(wp_unslash($_GET['offset']))) : 0;
         $processed = 0;
 
-        $processed_total = max(0, (int) ($_GET['processed_total'] ?? 0));
-        $total_to_scan   = isset($_GET['total_to_scan']) ? (int) $_GET['total_to_scan'] : 0;
+        $processed_total = isset($_GET['processed_total']) ? max(0, absint(wp_unslash($_GET['processed_total']))) : 0;
+        $total_to_scan   = isset($_GET['total_to_scan']) ? absint(wp_unslash($_GET['total_to_scan'])) : 0;
         if ($total_to_scan <= 0) {
             $total_to_scan = 0;
             foreach ($allowed as $type) {
@@ -400,6 +411,7 @@ class Tools {
             // keep your old minimal HTML fallback if someone hits it directly
             echo '<div class="wrap"><h1>' . esc_html__('Scanning for WPBakery content…', 'shortcode-to-blocks-pro') . '</h1>';
             echo '<p>' . sprintf(
+                /* translators: 1: scanned, 2: total, 3: percent */
                 esc_html__('%1$d of ~%2$d posts scanned (%3$d%%). Processing next batch…', 'shortcode-to-blocks-pro'),
                 (int)$processed_total, (int)$total_to_scan, (int)$percent
             ) . '</p>';
@@ -412,19 +424,19 @@ class Tools {
 
     public function export_dry_run_csv() {
         if (! isset($_GET['stbp_convert_nonce_field']) || ! check_admin_referer('stbp_convert_nonce','stbp_convert_nonce_field')) {
-            wp_die(__('Invalid nonce', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Invalid nonce', 'shortcode-to-blocks-pro'));
         }
         if (! current_user_can(Settings::required_capability())) {
-            wp_die(__('Insufficient permissions', 'shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Insufficient permissions', 'shortcode-to-blocks-pro'));
         }
-        $batch_id = sanitize_text_field($_GET['batch_id'] ?? '');
-        if ($batch_id === '') wp_die(__('Missing batch ID', 'shortcode-to-blocks-pro'));
+        $batch_id = isset($_GET['batch_id']) ? sanitize_text_field(wp_unslash($_GET['batch_id'])) : '';
+        if ($batch_id === '') wp_die(esc_html__('Missing batch ID', 'shortcode-to-blocks-pro'));
 
         // reuse the same store key logic as Batch
         $u = get_current_user_id() ?: 0;
         $key = "stbp_dryrun_{$u}_{$batch_id}";
         $report = get_transient($key);
-        if (!$report || empty($report['posts'])) wp_die(__('No dry run results found (expired or empty).', 'shortcode-to-blocks-pro'));
+        if (!$report || empty($report['posts'])) wp_die(esc_html__('No dry run results found (expired or empty).', 'shortcode-to-blocks-pro'));
 
         nocache_headers();
         header('Content-Type: text/csv; charset=utf-8');
@@ -435,22 +447,23 @@ class Tools {
         foreach ($report['posts'] as $row) {
             fputcsv($out, [$row['post_id'], $row['title'], $row['permalink'], $row['type'], $row['would_change']]);
         }
-        fclose($out);
         exit;
     }
     public function export_converted_csv() {
         if (! isset($_GET['stbp_convert_nonce_field']) || ! check_admin_referer('stbp_convert_nonce','stbp_convert_nonce_field')) {
-            wp_die(__('Invalid nonce','shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Invalid nonce','shortcode-to-blocks-pro'));
         }
         if (! current_user_can(Settings::required_capability())) {
-            wp_die(__('Insufficient permissions','shortcode-to-blocks-pro'));
+            wp_die(esc_html__('Insufficient permissions','shortcode-to-blocks-pro'));
         }
 
         global $wpdb;
 
-        $types = \STB\admin\Admin::allowed_post_types();
-        $type  = isset($_GET['type']) && in_array($_GET['type'], $types, true) ? sanitize_key($_GET['type']) : '';
-        $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+        $types          = \STB\admin\Admin::allowed_post_types();
+        $requested_type  = isset($_GET['type']) ? sanitize_key(wp_unslash($_GET['type'])) : '';
+        $type            = in_array($requested_type, $types, true) ? $requested_type : '';
+        $search          = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
+        $batch_id        = isset($_GET['batch_id']) ? sanitize_text_field(wp_unslash($_GET['batch_id'])) : '';
 
         $wheres = [];
         $params = [];
@@ -473,22 +486,32 @@ class Tools {
             if (is_numeric($search)) { $wheres[] = "(p.ID = %d OR p.post_title LIKE %s)"; $params[] = (int)$search; $params[] = '%' . $wpdb->esc_like($search) . '%'; }
             else { $wheres[] = "p.post_title LIKE %s"; $params[] = '%' . $wpdb->esc_like($search) . '%'; }
         }
+        if ($batch_id !== '') {
+            $wheres[] = "EXISTS (SELECT 1 FROM {$wpdb->postmeta} pmb WHERE pmb.post_id = p.ID AND pmb.meta_key = '_stbp_batch_id' AND pmb.meta_value = %s)";
+            $params[] = $batch_id;
+        }
 
         $whereSQL = 'WHERE ' . implode(' AND ', $wheres);
 
-        $sql = "SELECT p.ID, p.post_title, p.post_type, p.post_status,
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Admin export query for plugin-managed converted content with prepared search/type filters.
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT p.ID, p.post_title, p.post_type, p.post_status,
                     (SELECT pm.meta_value FROM {$wpdb->postmeta} pm WHERE pm.post_id = p.ID AND pm.meta_key = '_stbp_converted_ts' LIMIT 1) AS converted_ts,
                     (SELECT pm2.meta_value FROM {$wpdb->postmeta} pm2 WHERE pm2.post_id = p.ID AND pm2.meta_key = '_stbp_original_content_ts' LIMIT 1) AS backup_ts,
                     (SELECT pm3.meta_value FROM {$wpdb->postmeta} pm3 WHERE pm3.post_id = p.ID AND pm3.meta_key = '_wp_page_template' LIMIT 1) AS page_template
                 FROM {$wpdb->posts} p
                 $whereSQL
-                ORDER BY p.post_type, p.ID DESC";
-
-        $rows = $wpdb->get_results($wpdb->prepare($sql, ...$params), ARRAY_A);
+                ORDER BY p.post_type, p.ID DESC",
+                ...$params
+            ),
+            ARRAY_A
+        );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,PluginCheck.Security.DirectDB.UnescapedDBParameter
 
         nocache_headers();
         header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="stbp-converted-' . date('Ymd-His') . '.csv"');
+        header('Content-Disposition: attachment; filename="stbp-converted-' . gmdate('Ymd-His') . '.csv"');
         $out = fopen('php://output', 'w');
         fputcsv($out, ['post_id','title','post_type','status','permalink','converted_ts','backup_ts','page_template']);
         foreach ($rows as $r) {
@@ -498,12 +521,11 @@ class Tools {
                 $r['post_type'],
                 $r['post_status'],
                 get_permalink((int)$r['ID']),
-                $r['converted_ts'] ? date_i18n(get_option('date_format').' '.get_option('time_format'), (int)$r['converted_ts']) : '',
-                $r['backup_ts'] ? date_i18n(get_option('date_format').' '.get_option('time_format'), (int)$r['backup_ts']) : '',
+                $r['converted_ts'] ? date_i18n(get_option('date_format') . ' ' . get_option('time_format'), (int) $r['converted_ts']) : '',
+                $r['backup_ts'] ? date_i18n(get_option('date_format') . ' ' . get_option('time_format'), (int) $r['backup_ts']) : '',
                 $r['page_template'] ?? '',
             ]);
         }
-        fclose($out);
         exit;
     }
 }

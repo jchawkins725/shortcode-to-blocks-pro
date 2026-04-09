@@ -8,9 +8,9 @@ defined('ABSPATH') || exit;
   <h1><?php esc_html_e('Batch convert', 'shortcode-to-blocks-pro'); ?></h1>
 
   <?php
-  $selected_type = $pref && isset($counts[$pref]) ? $pref : '';
-  $has_any = array_sum(array_column($counts, 'vc_total')) > 0;
-  if (!$has_any): ?>
+  $stbp_selected_type = $pref && isset($counts[$pref]) ? $pref : '';
+  $stbp_has_any       = array_sum(array_column($counts, 'vc_total')) > 0;
+  if (! $stbp_has_any): ?>
     <div class="notice notice-info">
       <p><?php esc_html_e('No posts detected with WPBakery content yet. Run a scan first on the Tools page.', 'shortcode-to-blocks-pro'); ?>
       <a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( admin_url('admin-ajax.php?action=stbp_scan_vc'), 'stbp_convert_nonce','stbp_convert_nonce_field') ); ?>">
@@ -55,11 +55,11 @@ defined('ABSPATH') || exit;
           </div>
 
 
-          <?php foreach ($counts as $type => $info): ?>
+          <?php foreach ($counts as $stbp_type => $stbp_info): ?>
             <label style="display:flex;align-items:center;gap:8px;margin:6px 0;">
-              <input type="checkbox" name="post_types[]" value="<?php echo esc_attr($type); ?>" <?php checked($selected_type === $type); ?>>
-              <span><strong><?php echo esc_html($info['label']); ?></strong></span>
-              <span class="stbp-badge stbp-muted"><?php echo (int)$info['vc_total']; ?> <?php esc_html_e('posts', 'shortcode-to-blocks-pro'); ?></span>
+              <input type="checkbox" name="post_types[]" value="<?php echo esc_attr($stbp_type); ?>" <?php checked($stbp_selected_type === $stbp_type); ?>>
+              <span><strong><?php echo esc_html($stbp_info['label']); ?></strong></span>
+              <span class="stbp-badge stbp-muted"><?php echo (int) $stbp_info['vc_total']; ?> <?php esc_html_e('posts', 'shortcode-to-blocks-pro'); ?></span>
             </label>
           <?php endforeach; ?>
 
@@ -90,7 +90,7 @@ defined('ABSPATH') || exit;
           </p>
 
           <div class="stbp-actions" style="margin-top:12px">
-            <button type="submit" class="button button-primary" id="stbp-start" <?php disabled(!$has_any); ?>>
+            <button type="submit" class="button button-primary" id="stbp-start" <?php disabled(! $stbp_has_any); ?>>
               <?php esc_html_e('Start', 'shortcode-to-blocks-pro'); ?>
             </button>
             <button type="button" class="button" id="stbp-cancel" disabled>
@@ -125,13 +125,13 @@ defined('ABSPATH') || exit;
           <button type="button" class="stbp-close-card" data-target="stbp-types-card" style="background:none;border:none;font-size:18px;cursor:pointer;color:#666;padding:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center" title="<?php esc_attr_e('Close', 'shortcode-to-blocks-pro'); ?>">&times;</button>
         </div>
         <div class="stbp-list" id="stbp-type-rows">
-          <?php foreach ($counts as $type => $info): ?>
-            <div class="stbp-row" data-type="<?php echo esc_attr($type); ?>">
+          <?php foreach ($counts as $stbp_type => $stbp_info): ?>
+            <div class="stbp-row" data-type="<?php echo esc_attr($stbp_type); ?>">
               <div class="stbp-hd">
                 <div>
-                  <strong><?php echo esc_html($info['label']); ?></strong>
+                  <strong><?php echo esc_html($stbp_info['label']); ?></strong>
                   <div class="stbp-small stbp-muted">
-                    <span class="stbp-done">0</span> / <span class="stbp-total"><?php echo (int)$info['vc_total']; ?></span>
+                    <span class="stbp-done">0</span> / <span class="stbp-total"><?php echo (int) $stbp_info['vc_total']; ?></span>
                     ( <span class="stbp-pct">0</span>% )
                   </div>
                 </div>
@@ -161,8 +161,8 @@ defined('ABSPATH') || exit;
             <label for="stbp-parent-type"><strong><?php esc_html_e('Select post type', 'shortcode-to-blocks-pro'); ?></strong></label>
             <select name="parent_type" id="stbp-parent-type" style="min-width:180px">
               <option value="">-- <?php esc_html_e('Select type', 'shortcode-to-blocks-pro'); ?> --</option>
-              <?php foreach ($counts as $type => $info): ?>
-                <option value="<?php echo esc_attr($type); ?>"><?php echo esc_html($info['label']); ?></option>
+              <?php foreach ($counts as $stbp_type => $stbp_info): ?>
+                <option value="<?php echo esc_attr($stbp_type); ?>"><?php echo esc_html($stbp_info['label']); ?></option>
               <?php endforeach; ?>
             </select>
           </div>
@@ -257,7 +257,7 @@ defined('ABSPATH') || exit;
               parentDropdown2.innerHTML = '<option value="">-- <?php esc_html_e('None', 'shortcode-to-blocks-pro'); ?> --</option>';
               console.error('STBP parent dropdown network error');
             };
-            xhr.send('action=stbp_get_parents&type=' + encodeURIComponent(type) + '&_ajax_nonce=<?php echo wp_create_nonce('stbp_get_parents'); ?>');
+            xhr.send('action=stbp_get_parents&type=' + encodeURIComponent(type) + '&_ajax_nonce=<?php echo esc_attr(wp_create_nonce('stbp_get_parents')); ?>');
           } else {
             parentDropdown2.innerHTML = '<option value="">-- <?php esc_html_e('None', 'shortcode-to-blocks-pro'); ?> --</option>';
           }
