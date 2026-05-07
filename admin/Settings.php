@@ -5,10 +5,10 @@ defined('ABSPATH') || exit;
 
 /**
  * Pro Settings — adds Pro-specific fields (backup TTL, auto-purge) to the
- * Free plugin's settings page via the stb_register_settings hook.
+ * Free plugin's settings page via the stbc_register_settings hook.
  *
  * Shared settings (post_types, required_cap, retain_data) live in the Free
- * plugin's stb_options option. Pro-only settings live in stbp_options.
+ * plugin's stbc_options option. Pro-only settings live in stbp_options.
  */
 class Settings {
 
@@ -25,15 +25,15 @@ class Settings {
      * Callers can still do Settings::get()['post_types'] and it works.
      */
     public static function get(): array {
-        $free = class_exists('\\STB\\admin\\Settings') ? \STB\admin\Settings::get() : [];
+        $free = class_exists('\\STBC\\admin\\Settings') ? \STBC\admin\Settings::get() : [];
         $pro  = wp_parse_args(get_option('stbp_options', []), self::defaults());
         return array_merge($free, $pro);
     }
 
     /** Delegate to Free for capability. */
     public static function required_capability(): string {
-        if (class_exists('\\STB\\admin\\Settings')) {
-            return \STB\admin\Settings::required_capability();
+        if (class_exists('\\STBC\\admin\\Settings')) {
+            return \STBC\admin\Settings::required_capability();
         }
         return 'edit_others_posts';
     }
@@ -42,15 +42,15 @@ class Settings {
         return apply_filters('stbp_tools_capability', 'manage_options');
     }
 
-    /* --- Registration (hooked to stb_register_settings) --- */
+    /* --- Registration (hooked to stbc_register_settings) --- */
 
     /**
      * Register Pro-only settings on the Free settings page.
-     * The Pro option is registered under the stb_settings group so that
-     * settings_fields('stb_settings') includes its nonce.
+     * The Pro option is registered under the stbc_settings group so that
+     * settings_fields('stbc_settings') includes its nonce.
      */
     public static function register_settings(string $page): void {
-        register_setting('stb_settings', 'stbp_options', [
+        register_setting('stbc_settings', 'stbp_options', [
             'type'              => 'array',
             'sanitize_callback' => [self::class, 'sanitize'],
         ]);

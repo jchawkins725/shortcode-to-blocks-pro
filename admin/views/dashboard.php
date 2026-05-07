@@ -2,7 +2,7 @@
 /**
  * Dashboard view (shortcode content stats)
  */
-use STB\admin\Admin;
+use STBC\admin\Admin;
 use STBP\admin\Settings;
 use STBP\includes\Logger;
 
@@ -136,7 +136,7 @@ $stbp_has_scanned       = ! empty($stbp_dashboard['has_scanned']);
 $stbp_purge_backups_url = wp_nonce_url(admin_url('admin-ajax.php?action=stbp_purge_backups'), 'stbp_convert_nonce', 'stbp_convert_nonce_field');
 $stbp_purge_logs_url    = wp_nonce_url(admin_url('admin-ajax.php?action=stbp_purge_logs'), 'stbp_convert_nonce', 'stbp_convert_nonce_field');
 $stbp_export_logs_url   = wp_nonce_url(admin_url('admin-post.php?action=stbp_export_logs'), 'stbp_convert_nonce', 'stbp_convert_nonce_field');
-$stbp_base_slug         = defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks';
+$stbp_base_slug         = defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks';
 $stbp_convert_page      = admin_url('admin.php?page=' . $stbp_base_slug . '-convert');
 $stbp_settings_page     = admin_url('admin.php?page=' . $stbp_base_slug . '-settings');
 $stbp_logs_page         = admin_url('admin.php?page=' . $stbp_base_slug . '-logs');
@@ -165,7 +165,7 @@ $stbp_scan_url          = wp_nonce_url(
 </style>
 
 <div class="wrap">
-  <h1><?php esc_html_e('Shortcode to Blocks Converter','shortcode-to-blocks-pro'); ?></h1>
+  <h1><?php esc_html_e('Shortcode to Blocks','shortcode-to-blocks-pro'); ?></h1>
   <?php
   $stbp_all_zero = true;
   if (! empty($stbp_counts)) {
@@ -246,7 +246,7 @@ $stbp_scan_url          = wp_nonce_url(
             <div class="num"><?php echo count($stbp_types); ?></div>
           </div>
           <div class="stbp-kpi">
-            <div class="label stbp-muted"><?php esc_html_e('VC posts with backups','shortcode-to-blocks-pro'); ?></div>
+            <div class="label stbp-muted"><?php esc_html_e('Posts with backups','shortcode-to-blocks-pro'); ?></div>
             <div class="num"><?php echo (int) $stbp_backups_total; ?></div>
           </div>
           <div class="stbp-kpi">
@@ -254,7 +254,7 @@ $stbp_scan_url          = wp_nonce_url(
             <div class="num">
               <?php
                 echo $stbp_last_convert
-                  ? esc_html( \STB\core\Helpers::format_admin_datetime($stbp_last_convert) )
+                  ? esc_html( \STBC\core\Helpers::format_admin_datetime($stbp_last_convert) )
                   : '—';
               ?>
             </div>          
@@ -322,7 +322,7 @@ $stbp_scan_url          = wp_nonce_url(
             <tbody>
               <?php foreach ($stbp_recent_logs as $stbp_log_row): ?>
                 <tr>
-                  <td><?php echo esc_html( \STB\core\Helpers::format_admin_datetime($stbp_log_row['created_at']) ); ?></td>
+                  <td><?php echo esc_html( \STBC\core\Helpers::format_admin_datetime($stbp_log_row['created_at']) ); ?></td>
                   <td><?php echo esc_html($stbp_log_row['action']); ?></td>
                   <td><?php echo esc_html($stbp_log_row['status']); ?></td>
                   <td>

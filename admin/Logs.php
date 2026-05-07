@@ -63,7 +63,7 @@ class Logs extends \WP_List_Table {
             );
         }
     }
-    $page_slug = (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-logs';
+    $page_slug = (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-logs';
 
     // Action buttons (routes already implemented in Tools.php / AJAX)
     $export_url  = wp_nonce_url(
@@ -99,7 +99,7 @@ class Logs extends \WP_List_Table {
         $counts = \STBP\includes\Logger::counts_by_action_status();
     }
     ?>
-            <?php \STB\admin\Admin::render_tabs( (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-logs' ); ?>
+            <?php \STBC\admin\Admin::render_tabs( (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-logs' ); ?>
     <div class="wrap">
         <h1 class="wp-heading-inline"><?php esc_html_e('Logs', 'shortcode-to-blocks-pro'); ?></h1>
         <?php
@@ -264,7 +264,7 @@ class Logs extends \WP_List_Table {
         ) : null;
 
         return [
-            'created_at' => esc_html( \STB\core\Helpers::format_admin_datetime($r['created_at']) ),
+            'created_at' => esc_html( \STBC\core\Helpers::format_admin_datetime($r['created_at']) ),
             'user'       => $user ? esc_html($user->display_name) : '—',
             'post'       => $post_link ?: '—',
             'action'     => esc_html($r['action']),

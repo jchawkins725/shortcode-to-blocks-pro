@@ -110,7 +110,7 @@ class Batch {
      * Provides $types, $counts, $nonce, and $last_batch to the view.
      */
     public static function render_convert_page() {
-        $types = \STB\admin\Admin::allowed_post_types();
+        $types = \STBC\admin\Admin::allowed_post_types();
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin page preselection from the URL.
         $pref  = isset($_GET['type']) ? sanitize_key(wp_unslash($_GET['type'])) : '';
         $counts = [];
@@ -158,7 +158,7 @@ class Batch {
             wp_send_json_error('insufficient permissions', 403);
         }
 
-        $allowed      = \STB\admin\Admin::allowed_post_types();
+        $allowed      = \STBC\admin\Admin::allowed_post_types();
         $posted_types  = isset($_POST['post_types']) ? array_map('sanitize_key', (array) wp_unslash($_POST['post_types'])) : [];
         $selected      = array_values(array_intersect($posted_types, $allowed));
         if (empty($selected)) {
@@ -497,7 +497,7 @@ class Batch {
         }
 
         $q = new \WP_Query([
-            'post_type'               => \STB\admin\Admin::allowed_post_types(),
+            'post_type'               => \STBC\admin\Admin::allowed_post_types(),
             'post_status'             => ['publish','draft','pending','private','future'],
             'fields'                  => 'ids',
             'no_found_rows'           => true,
@@ -687,7 +687,7 @@ class Batch {
         }
 
         // Verify post type is allowed
-        $allowed = \STB\admin\Admin::allowed_post_types();
+        $allowed = \STBC\admin\Admin::allowed_post_types();
         if (!in_array($parent_type, $allowed, true)) {
             wp_send_json_error('Post type not allowed for conversion', 400);
         }

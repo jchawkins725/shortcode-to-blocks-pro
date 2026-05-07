@@ -1,4 +1,4 @@
-=== Shortcode to Blocks Converter Pro ===
+=== Shortcode to Blocks Pro ===
 Contributors: jchawkins725
 Tags: gutenberg, wpbakery, shortcode, converter, migration
 Requires at least: 6.0
@@ -8,13 +8,13 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Pro add-on for Shortcode to Blocks Converter — batch conversion, 17 advanced converters, logging, tools, and license key activation.
+Pro add-on for Shortcode to Blocks — batch conversion, 17 advanced converters, logging, tools, and license key activation.
 
 == Description ==
 
-**Shortcode to Blocks Converter Pro** is a premium add-on for the free [Shortcode to Blocks Converter](https://wordpress.org/plugins/shortcode-to-blocks/) plugin. It extends the free version with advanced WPBakery shortcode converters, batch processing, full conversion logging, and maintenance tools.
+**Shortcode to Blocks Pro** is a premium add-on for the free [Shortcode to Blocks](https://wordpress.org/plugins/shortcode-to-blocks/) plugin. It extends the free version with advanced WPBakery shortcode converters, batch processing, full conversion logging, and maintenance tools.
 
-**Requires**: [Shortcode to Blocks Converter](https://wordpress.org/plugins/shortcode-to-blocks/) (free) must be installed and activated.
+**Requires**: [Shortcode to Blocks](https://wordpress.org/plugins/shortcode-to-blocks/) (free) must be installed and activated.
 
 = What Pro Adds =
 
@@ -54,7 +54,7 @@ Combined with the free plugin's 11 converters, Pro supports **28 WPBakery shortc
 
 **Tools & Maintenance**
 
-* VC detection scan across all post types
+* WPBakery content detection scan across all post types
 * Purge old backups by age threshold or all at once
 * Optional daily WP-Cron auto-purge for backups older than 1 year
 * Purge logs by age or clear all
@@ -70,16 +70,16 @@ The free plugin is great for small sites with a handful of pages. If you have do
 
 == Installation ==
 
-1. Install and activate the free [Shortcode to Blocks Converter](https://wordpress.org/plugins/shortcode-to-blocks/) plugin first.
+1. Install and activate the free [Shortcode to Blocks](https://wordpress.org/plugins/shortcode-to-blocks/) plugin first.
 2. Upload the `shortcode-to-blocks-pro` folder to `/wp-content/plugins/`, or install via the Plugins screen.
-3. Activate **Shortcode to Blocks Converter Pro**.
+3. Activate **Shortcode to Blocks Pro**.
 4. Go to **Shortcode → Blocks → Settings** and enter your license key.
 5. The Pro tabs (Convert, Revert, Tools, Logs, Converted Posts) will appear in the plugin navigation.
 
 == Frequently Asked Questions ==
 
 = Do I need the free plugin? =
-Yes. The Pro add-on requires [Shortcode to Blocks Converter](https://wordpress.org/plugins/shortcode-to-blocks/) (free) to be installed and active. Pro extends the free plugin — it does not replace it.
+Yes. The Pro add-on requires [Shortcode to Blocks](https://wordpress.org/plugins/shortcode-to-blocks/) (free) to be installed and active. Pro extends the free plugin — it does not replace it.
 
 = Does this work with other page builders? =
 No. Both the free and Pro plugins are designed exclusively for WPBakery Page Builder (Visual Composer) shortcodes.
@@ -112,7 +112,7 @@ The free plugin continues to work for single-post conversion with its 11 basic c
 == Changelog ==
 
 = 1.0.0 =
-* Initial release as a Pro add-on for Shortcode to Blocks Converter (free)
+* Initial release as a Pro add-on for Shortcode to Blocks (free)
 * 17 advanced WPBakery shortcode converters:
   - CTA, toggle, video, Google Maps, raw JS, icon
   - Tabs, tours, accordions (classic and TTA)
@@ -121,7 +121,7 @@ The free plugin continues to work for single-post conversion with its 11 basic c
 * Batch revert by batch ID
 * Bulk action on Posts / Pages list tables
 * Full conversion logging with CSV export
-* Tools: backup purge, log purge, VC detection scan
+* Tools: backup purge, log purge, WPBakery content detection scan
 * Converted Posts admin page
 * License key activation
 * Auto-purge WP-Cron for backups older than 1 year
@@ -129,4 +129,4 @@ The free plugin continues to work for single-post conversion with its 11 basic c
 == Upgrade Notice ==
 
 = 1.0.0 =
-First release. Requires the free Shortcode to Blocks Converter plugin. Test on staging before converting production content.
+First release. Requires the free Shortcode to Blocks plugin. Test on staging before converting production content.

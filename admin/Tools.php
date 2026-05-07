@@ -2,7 +2,7 @@
 namespace STBP\admin;
 
 use STBP\includes\Logger;
-use STB\core\Detector;
+use STBC\core\Detector;
 
 defined('ABSPATH') || exit;
 
@@ -28,7 +28,7 @@ class Tools {
             require_once STBP_PATH . 'includes/Logger.php';
         }
         \STBP\includes\Logger::maybe_install();
-        wp_safe_redirect( admin_url('admin.php?page=' . (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-logs&logs=installed') );
+        wp_safe_redirect( admin_url('admin.php?page=' . (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-logs&logs=installed') );
         exit;
     }
 
@@ -75,7 +75,7 @@ class Tools {
             'stbp_convert_nonce','stbp_convert_nonce_field'
         );
         ?>
-        <?php \STB\admin\Admin::render_tabs( (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-tools' ); ?>
+        <?php \STBC\admin\Admin::render_tabs( (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-tools' ); ?>
         <div class="wrap">
         <!-- match dashboard/convert helpers + add column gaps -->
         <style>
@@ -278,7 +278,7 @@ class Tools {
 
         // back to Tools with a friendly notice (no more logs=installed confusion)
         $url = add_query_arg([
-            'page'           => (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-tools',
+            'page'           => (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-tools',
             'purged_backups' => $purged,
             'all'            => $all ? 1 : 0,
         ], admin_url('admin.php'));
@@ -300,12 +300,12 @@ class Tools {
             $count = Logger::purge_all();
             Logger::log('purge', 'success', "Purged ALL logs: {$count}");
             delete_transient('stbp_dash_counts');            // ← add this
-            wp_safe_redirect( admin_url('admin.php?page=' . (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-logs&logs_purged_all=' . $count) );
+            wp_safe_redirect( admin_url('admin.php?page=' . (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-logs&logs_purged_all=' . $count) );
         } else {
             $count = Logger::purge_older_than($days);
             Logger::log('purge', 'success', "Purged logs older than {$days} days: {$count}");
             delete_transient('stbp_dash_counts');            // ← and here
-            wp_safe_redirect( admin_url('admin.php?page=' . (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-logs&logs_purged=' . $count . '&days=' . $days) );
+            wp_safe_redirect( admin_url('admin.php?page=' . (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-logs&logs_purged=' . $count . '&days=' . $days) );
         }
         exit;
     }
@@ -334,7 +334,7 @@ class Tools {
 
         $json_mode = ! empty($_GET['json']); // if present, we return wp_send_json_*
 
-        $allowed   = \STB\admin\Admin::allowed_post_types();
+        $allowed   = \STBC\admin\Admin::allowed_post_types();
         $per_page  = 100;
         $offset    = isset($_GET['offset']) ? max(0, absint(wp_unslash($_GET['offset']))) : 0;
         $processed = 0;
@@ -363,7 +363,7 @@ class Tools {
 
             foreach ($q->posts as $pid) {
                 $p = get_post($pid);
-                \STB\core\Detector::flag_post($pid, $p ? (string) $p->post_content : '');
+                \STBC\core\Detector::flag_post($pid, $p ? (string) $p->post_content : '');
                 $processed++;
             }
         }
@@ -373,7 +373,7 @@ class Tools {
         $percent = min(100, (int) round(($processed_total / max(1, $total_to_scan)) * 100));
 
         if ($processed === 0) {
-            \STBP\includes\Logger::log('scan', 'success', 'VC detection scan complete');
+            \STBP\includes\Logger::log('scan', 'success', 'WPbakery detection scan complete');
             if ($json_mode) {
                 wp_send_json_success([
                     'done'    => true,
@@ -381,7 +381,7 @@ class Tools {
                     'label'   => __('Detection scan complete.', 'shortcode-to-blocks-pro'),
                 ]);
             } else {
-                wp_safe_redirect( admin_url('admin.php?page=' . (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '&scan=done') );
+                wp_safe_redirect( admin_url('admin.php?page=' . (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '&scan=done') );
                 exit;
             }
         }
@@ -459,7 +459,7 @@ class Tools {
 
         global $wpdb;
 
-        $types          = \STB\admin\Admin::allowed_post_types();
+        $types          = \STBC\admin\Admin::allowed_post_types();
         $requested_type  = isset($_GET['type']) ? sanitize_key(wp_unslash($_GET['type'])) : '';
         $type            = in_array($requested_type, $types, true) ? $requested_type : '';
         $search          = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';

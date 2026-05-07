@@ -14,7 +14,7 @@ class Converted {
 
         // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin filters, sorting, and paging.
         $allowed_orderby = ['id', 'title', 'type', 'status', 'converted_ts', 'backup_ts', 'batch_id'];
-        $types           = \STB\admin\Admin::allowed_post_types();
+        $types           = \STBC\admin\Admin::allowed_post_types();
         $orderby         = 'converted_ts';
         $order           = 'DESC';
         $type            = '';
@@ -46,7 +46,7 @@ class Converted {
         $base_url = admin_url('admin.php');
 
         // persist filters and ensure page param is present
-        $persist  = ['page' => (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted'];
+        $persist  = ['page' => (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-converted'];
         if ($type)                 { $persist['type']     = $type; }
         if ($search !== '')        { $persist['s']        = $search; }
         if ($batch_filter !== '')  { $persist['batch_id'] = $batch_filter; }
@@ -162,7 +162,7 @@ class Converted {
         }
         // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,PluginCheck.Security.DirectDB.UnescapedDBParameter
         $total_pages = max(1, (int) ceil($total / $per_page));
-        $base = add_query_arg('page', (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted', admin_url('admin.php'));
+        $base = add_query_arg('page', (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-converted', admin_url('admin.php'));
 
         $export_args = ['action' => 'stbp_export_converted'];
         if ($type) {
@@ -180,13 +180,13 @@ class Converted {
             'stbp_convert_nonce_field'
         );
         ?>
-        <?php \STB\admin\Admin::render_tabs( (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted' ); ?>
+        <?php \STBC\admin\Admin::render_tabs( (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-converted' ); ?>
         <div class="wrap">
             <h1 class="wp-heading-inline"><?php esc_html_e('Converted Posts','shortcode-to-blocks-pro'); ?></h1>
             <hr class="wp-header-end">
 
             <form method="get" style="margin-bottom:12px">
-                <input type="hidden" name="page" value="<?php echo esc_attr((defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted'); ?>">
+                <input type="hidden" name="page" value="<?php echo esc_attr((defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-converted'); ?>">
                 <label for="post_type_filter" class="screen-reader-text"><?php esc_html_e('Filter by type','shortcode-to-blocks-pro'); ?></label>
                 <select name="type" id="post_type_filter">
                     <option value=""><?php esc_html_e('All Types', 'shortcode-to-blocks-pro'); ?></option>
@@ -202,7 +202,7 @@ class Converted {
                 </a>
                 <?php
                     // build a clean URL that just points to this page, no filters/sorting/pagination
-                    $clear_url = add_query_arg('page', (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted', admin_url('admin.php'));
+                    $clear_url = add_query_arg('page', (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-converted', admin_url('admin.php'));
 
                     // show the button only when any filter/sort is active
                     $has_filters = ($type || $search !== '' || $batch_filter !== '' || 'converted_ts' !== $orderby || 'DESC' !== $order || $paged > 1);
@@ -279,7 +279,7 @@ class Converted {
                                 <td><?php echo $r->backup_ts ? esc_html(date_i18n(get_option('date_format').' '.get_option('time_format'), (int)$r->backup_ts)) : '—'; ?></td>
                                 <td>
                                     <?php if (! empty($r->batch_id)) : ?>
-                                        <a href="<?php echo esc_url(add_query_arg(['page' => (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted', 'batch_id' => $r->batch_id], admin_url('admin.php'))); ?>"><?php echo esc_html($r->batch_id); ?></a>
+                                        <a href="<?php echo esc_url(add_query_arg(['page' => (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-converted', 'batch_id' => $r->batch_id], admin_url('admin.php'))); ?>"><?php echo esc_html($r->batch_id); ?></a>
                                     <?php else: ?>
                                         —
                                     <?php endif; ?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Uninstall cleanup for Shortcode to Blocks Converter Pro.
+ * Uninstall cleanup for Shortcode to Blocks Pro.
  * Executes when the plugin is deleted via the WordPress admin.
  */
 
@@ -11,7 +11,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 /**
  * Configuration (matches your codebase)
  */
-define( 'STBP_OPTION_RETAIN_DATA', 'stb_retain_data_on_uninstall' );  // shared retain-data option from the free plugin
+define( 'STBP_OPTION_RETAIN_DATA', 'stbc_retain_data_on_uninstall' ); // shared retain-data option from the free plugin
+define( 'STBP_OPTION_RETAIN_DATA_LEGACY', 'stb_retain_data_on_uninstall' );
 define( 'STBP_OPTION_PREFIX',      'stbp_' );                           // your options/transients prefix
 define( 'STBP_LOGS_TABLE',         'stbp_logs' );                       // {$wpdb->prefix}stbp_logs
 define( 'STBP_CRON_HOOK',          'stbp_cron_purge_backups' );         // scheduled single-event hook
@@ -29,12 +30,12 @@ $stbp_meta_keys = array(
 /**
  * Should we retain data? (default: keep)
  *
- * The Pro add-on follows the shared free-plugin setting `stb_retain_data_on_uninstall`.
+ * The Pro add-on follows the shared free-plugin setting `stbc_retain_data_on_uninstall`.
  *
  * @return bool True to keep data; false to delete data.
  */
 function stbp_should_retain_data() {
-	return (bool) get_option( STBP_OPTION_RETAIN_DATA, true );
+	return (bool) get_option( STBP_OPTION_RETAIN_DATA, get_option( STBP_OPTION_RETAIN_DATA_LEGACY, true ) );
 }
 
 /**

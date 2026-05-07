@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Shortcode to Blocks Converter Pro
+ * Plugin Name: Shortcode to Blocks Pro
  * Description: Pro add-on for Shortcode to Blocks — adds batch/bulk convert, advanced shortcode converters, logging, tools, and license key activation.
  * Version: 1.0.0
  * Author: Jonathan Hawkins
@@ -37,7 +37,7 @@ spl_autoload_register(function ($class) {
  * Dependency: Free plugin must be active
  * ─────────────────────────────────────────── */
 add_action('plugins_loaded', function () {
-    if (!defined('STB_VERSION')) {
+    if (!defined('STBC_VERSION')) {
         add_action('admin_notices', function () {
             echo '<div class="notice notice-error"><p>';
             printf(
@@ -52,7 +52,7 @@ add_action('plugins_loaded', function () {
 
     /* ---- Admin hooks — license settings always available ---- */
     if (is_admin()) {
-        add_action('stb_register_settings', [\STBP\includes\License::class, 'register_settings']);
+        add_action('stbc_register_settings', [\STBP\includes\License::class, 'register_settings']);
         add_action('admin_init', [\STBP\includes\License::class, 'handle_actions']);
     }
 
@@ -64,7 +64,7 @@ add_action('plugins_loaded', function () {
                 printf(
                     // translators: 1: opening anchor tag, 2: closing anchor tag
                     esc_html__('Shortcode to Blocks Pro: please %1$sactivate your license%2$s to unlock Pro features.', 'shortcode-to-blocks-pro'),
-                    '<a href="' . esc_url(admin_url('admin.php?page=' . (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-settings')) . '">',
+                    '<a href="' . esc_url(admin_url('admin.php?page=' . (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-settings')) . '">',
                     '</a>'
                 );
                 echo '</p></div>';
@@ -74,23 +74,23 @@ add_action('plugins_loaded', function () {
     }
 
     /* ---- Override the converter class to use ConverterPro ---- */
-    add_filter('stb_converter_class', function () {
+    add_filter('stbc_converter_class', function () {
         return '\\STBP\\includes\\ConverterPro';
     });
 
     /* ---- Use the Pro dashboard view ---- */
-    add_filter('stb_dashboard_view', function () {
+    add_filter('stbc_dashboard_view', function () {
         return STBP_PATH . 'admin/views/dashboard.php';
     });
 
     /* ---- Log individual convert / revert from the Free plugin ---- */
-    add_action('stb_post_converted', function ($post_id) {
+    add_action('stbc_post_converted', function ($post_id) {
         \STBP\includes\Logger::log('convert', 'success', sprintf('Converted post ID %d', $post_id), $post_id);
     });
-    add_action('stb_post_reverted', function ($post_id) {
+    add_action('stbc_post_reverted', function ($post_id) {
         \STBP\includes\Logger::log('revert', 'success', sprintf('Reverted post ID %d', $post_id), $post_id);
     });
-    add_action('stb_convert_error', function ($post_id, $message) {
+    add_action('stbc_convert_error', function ($post_id, $message) {
         \STBP\includes\Logger::log('convert', 'error', $message, $post_id);
     }, 10, 2);
 
@@ -102,10 +102,10 @@ add_action('plugins_loaded', function () {
         (new \STBP\admin\Tools())->init();
 
         // Pro settings sections on Free's settings page
-        add_action('stb_register_settings', [\STBP\admin\Settings::class, 'register_settings']);
+        add_action('stbc_register_settings', [\STBP\admin\Settings::class, 'register_settings']);
 
         // Add Pro submenus under the Free menu
-        add_action('stb_register_admin_menus', function (string $parent_slug, string $cap) {
+        add_action('stbc_register_admin_menus', function (string $parent_slug, string $cap) {
             add_submenu_page($parent_slug, __('Convert', 'shortcode-to-blocks-pro'),        __('Convert', 'shortcode-to-blocks-pro'),        $cap, $parent_slug . '-convert',   [\STBP\admin\Batch::class, 'render_convert_page']);
             add_submenu_page($parent_slug, __('Revert', 'shortcode-to-blocks-pro'),         __('Revert', 'shortcode-to-blocks-pro'),         $cap, $parent_slug . '-revert',    [\STBP\admin\Batch::class, 'render_revert_page']);
             add_submenu_page($parent_slug, __('Tools', 'shortcode-to-blocks-pro'),          __('Tools', 'shortcode-to-blocks-pro'),          $cap, $parent_slug . '-tools',     [\STBP\admin\Tools::class, 'render_tools_page']);
@@ -114,8 +114,8 @@ add_action('plugins_loaded', function () {
         }, 10, 2);
 
         // Add Pro tabs to the Free tab bar
-        add_filter('stb_admin_tabs', function (array $tabs) {
-            $slug = defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks';
+        add_filter('stbc_admin_tabs', function (array $tabs) {
+            $slug = defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks';
             $pro_tabs = [
                 $slug . '-convert'   => [__('Convert',        'shortcode-to-blocks-pro'), admin_url('admin.php?page=' . $slug . '-convert')],
                 $slug . '-revert'    => [__('Revert',         'shortcode-to-blocks-pro'), admin_url('admin.php?page=' . $slug . '-revert')],

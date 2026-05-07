@@ -2,7 +2,7 @@
 // admin/views/revert.php
 defined('ABSPATH') || exit;
 ?>
-<?php \STB\admin\Admin::render_tabs( (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-revert' ); ?>
+<?php \STBC\admin\Admin::render_tabs( (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-revert' ); ?>
 
 <div class="wrap">
   <h1><?php esc_html_e('Batch revert', 'shortcode-to-blocks-pro'); ?></h1>
@@ -254,7 +254,7 @@ jQuery(function($){
     const $viewLink = $('#stbp-view-batch-posts');
     
     if (batchId && await validateBatchId(batchId)) {
-      $viewLink.show().attr('href', '<?php echo esc_js(admin_url('admin.php?page=' . (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-converted')); ?>&batch_id=' + encodeURIComponent(batchId));
+      $viewLink.show().attr('href', '<?php echo esc_js(admin_url('admin.php?page=' . (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-converted')); ?>&batch_id=' + encodeURIComponent(batchId));
     } else {
       $viewLink.hide();
     }

@@ -1,7 +1,7 @@
 <?php
 namespace STBP\includes;
 
-use STB\core\Converter;
+use STBC\core\Converter;
 
 defined('ABSPATH') || exit;
 
@@ -29,10 +29,12 @@ class ConverterPro extends Converter {
 
     // [vc_cta] - Call-to-action block
     public function convert_vc_cta($attrs, string $inner_content): string {
+        $attrs = is_array($attrs) ? $attrs : [];
         $heading    = $attrs['h2'] ?? '';
         $subheading = $attrs['h4'] ?? '';
         $content    = trim($inner_content);
         $align      = $attrs['txt_align'] ?? 'left';
+        [$custom_classes, $anchor] = $this->get_custom_classes_and_anchor($attrs);
 
         $has_button  = isset($attrs['add_button']) && $attrs['add_button'] !== 'false' && $attrs['add_button'] !== '';
         $button_text = $attrs['btn_title'] ?? '';
@@ -51,8 +53,10 @@ class ConverterPro extends Converter {
         $div_classes = ['cta-block'];
         if ($cta_style) $div_classes[] = 'cta-' . sanitize_html_class($cta_style);
         if ($align !== 'left') $div_classes[] = 'has-text-align-' . sanitize_html_class($align);
+        if (!empty($custom_classes)) $div_classes = array_merge($div_classes, $custom_classes);
 
         $group_attrs = ['className' => implode(' ', $div_classes)];
+        if ($anchor !== '') $group_attrs['anchor'] = $anchor;
         if (!empty($styling['block_attrs'])) $group_attrs['style'] = $styling['block_attrs'];
 
         $final_div_classes = array_merge(['wp-block-group'], $div_classes);
@@ -61,8 +65,9 @@ class ConverterPro extends Converter {
         $attrs_json = wp_json_encode($group_attrs);
         $div_class  = implode(' ', $final_div_classes);
         $style_attr = !empty($styling['inline_styles']) ? ' style="' . implode(';', $styling['inline_styles']) . '"' : '';
+        $id_attr    = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
 
-        $out = "<!-- wp:group {$attrs_json} -->\n<div class=\"{$div_class}\"{$style_attr}>";
+        $out = "<!-- wp:group {$attrs_json} -->\n<div class=\"{$div_class}\"{$id_attr}{$style_attr}>";
 
         if (!empty($heading)) {
             $level = !empty($subheading) ? 2 : 3;
@@ -132,20 +137,42 @@ class ConverterPro extends Converter {
 
     // [vc_toggle] → details
     public function convert_vc_toggle($attrs, string $inner_content): string {
+        $attrs = is_array($attrs) ? $attrs : [];
         $title   = isset($attrs['title']) ? esc_html($attrs['title']) : 'Details';
         $content = trim($inner_content);
         $parsed  = ($content !== '') ? trim($this->blocks_from_html($content)) : '';
+        [$custom_classes, $anchor] = $this->get_custom_classes_and_anchor($attrs);
 
-        return "<!-- wp:details -->\n<details class='wp-block-details'>\n<summary>{$title}</summary>\n{$parsed}\n</details>\n<!-- /wp:details -->";
+        $block_attrs = [];
+        if (!empty($custom_classes)) $block_attrs['className'] = implode(' ', $custom_classes);
+        if ($anchor !== '') $block_attrs['anchor'] = $anchor;
+
+        $class_names = array_merge(['wp-block-details'], $custom_classes);
+        $id_attr = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
+        $open = empty($block_attrs)
+            ? '<!-- wp:details -->'
+            : '<!-- wp:details ' . wp_json_encode($block_attrs) . ' -->';
+
+        return $open . "\n<details class=\"" . esc_attr(implode(' ', array_values(array_unique($class_names)))) . "\"{$id_attr}>\n<summary>{$title}</summary>\n{$parsed}\n</details>\n<!-- /wp:details -->";
     }
 
     // [vc_gmaps]
     public function convert_vc_gmaps($attrs, $inner_content = ''): string {
+        $attrs = is_array($attrs) ? $attrs : [];
         $address = $attrs['address'] ?? '';
         $zoom    = (int) ($attrs['zoom'] ?? 14);
         if ($address === '') return '';
+        [$custom_classes, $anchor] = $this->get_custom_classes_and_anchor($attrs);
         $url = "https://maps.google.com/?q=" . rawurlencode($address) . "&z={$zoom}";
-        return "<!-- wp:embed {\"url\":\"$url\"} -->\n<figure class=\"wp-block-embed is-type-embed is-provider-googlemaps wp-block-embed-googlemaps\"><div class=\"wp-block-embed__wrapper\">\n$url\n</div></figure>\n<!-- /wp:embed -->";
+        $block_attrs = ['url' => $url];
+        if (!empty($custom_classes)) $block_attrs['className'] = implode(' ', $custom_classes);
+        if ($anchor !== '') $block_attrs['anchor'] = $anchor;
+
+        $figure_classes = array_merge(['wp-block-embed', 'is-type-embed', 'is-provider-googlemaps', 'wp-block-embed-googlemaps'], $custom_classes);
+        $id_attr = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
+
+        return '<!-- wp:embed ' . wp_json_encode($block_attrs) . ' -->' . "\n"
+            . '<figure class="' . esc_attr(implode(' ', array_values(array_unique($figure_classes)))) . '"' . $id_attr . '><div class="wp-block-embed__wrapper">' . "\n{$url}\n</div></figure>\n<!-- /wp:embed -->";
     }
 
     // [vc_raw_js]
@@ -159,6 +186,7 @@ class ConverterPro extends Converter {
 
     // [vc_video]
     public function convert_vc_video($attrs, $inner_content = ''): string {
+        $attrs = is_array($attrs) ? $attrs : [];
         $url = '';
         if (!empty($attrs['link']) && filter_var($attrs['link'], FILTER_VALIDATE_URL)) {
             $url = $attrs['link'];
@@ -167,25 +195,38 @@ class ConverterPro extends Converter {
             if (filter_var($maybe, FILTER_VALIDATE_URL)) $url = $maybe;
         }
         if ($url === '') return '';
+        [$custom_classes, $anchor] = $this->get_custom_classes_and_anchor($attrs);
 
         $provider = '';
         if (preg_match('~(youtube\.com|youtu\.be)~i', $url)) $provider = 'youtube';
         elseif (preg_match('~vimeo\.com~i', $url)) $provider = 'vimeo';
 
         if ($provider) {
-            $json = wp_json_encode(['url' => $url]);
-            return "<!-- wp:embed $json -->\n<figure class=\"wp-block-embed is-type-video is-provider-$provider wp-block-embed-$provider\"><div class=\"wp-block-embed__wrapper\">\n$url\n</div></figure>\n<!-- /wp:embed -->";
+            $block_attrs = ['url' => $url];
+            if (!empty($custom_classes)) $block_attrs['className'] = implode(' ', $custom_classes);
+            if ($anchor !== '') $block_attrs['anchor'] = $anchor;
+
+            $figure_classes = array_merge(['wp-block-embed', 'is-type-video', 'is-provider-' . $provider, 'wp-block-embed-' . $provider], $custom_classes);
+            $id_attr = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
+
+            return '<!-- wp:embed ' . wp_json_encode($block_attrs) . ' -->' . "\n"
+                . '<figure class="' . esc_attr(implode(' ', array_values(array_unique($figure_classes)))) . '"' . $id_attr . '><div class="wp-block-embed__wrapper">' . "\n{$url}\n</div></figure>\n<!-- /wp:embed -->";
         }
-        return "<!-- wp:html -->\n<div class=\"vc-video\"><iframe src=\"$url\" allowfullscreen loading=\"lazy\"></iframe></div>\n<!-- /wp:html -->";
+
+        $wrapper_classes = array_merge(['vc-video'], $custom_classes);
+        $id_attr = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
+        return "<!-- wp:html -->\n<div class=\"" . esc_attr(implode(' ', array_values(array_unique($wrapper_classes)))) . "\"{$id_attr}><iframe src=\"" . esc_url($url) . "\" allowfullscreen loading=\"lazy\"></iframe></div>\n<!-- /wp:html -->";
     }
 
     // [vc_icon]
     public function convert_vc_icon($attrs, $inner_content = ''): string {
+        $attrs = is_array($attrs) ? $attrs : [];
         $icon_class = '';
         foreach (['icon_fontawesome', 'icon_openiconic', 'icon_typicons', 'icon_entypo', 'icon_linecons'] as $key) {
             if (!empty($attrs[$key])) { $icon_class = $attrs[$key]; break; }
         }
         if (empty($icon_class)) return '';
+        [$custom_classes, $anchor] = $this->get_custom_classes_and_anchor($attrs);
 
         $size_map  = ['xs' => '12px', 'sm' => '16px', 'md' => '24px', 'lg' => '32px', 'xl' => '48px'];
         $font_size = $size_map[$attrs['size'] ?? 'md'] ?? '24px';
@@ -231,8 +272,10 @@ class ConverterPro extends Converter {
             }
         }
 
+        $wrapper_classes = array_merge(['vc-icon-wrapper'], $custom_classes);
         $wrapper_style_attr = !empty($wrapper_styles) ? ' style="' . esc_attr(implode('; ', $wrapper_styles)) . '"' : '';
-        $final_html = '<div class="vc-icon-wrapper"' . $wrapper_style_attr . '>' . $icon_html . '</div>';
+        $id_attr = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
+        $final_html = '<div class="' . esc_attr(implode(' ', array_values(array_unique($wrapper_classes)))) . '"' . $id_attr . $wrapper_style_attr . '>' . $icon_html . '</div>';
         return "<!-- wp:html -->\n{$final_html}\n<!-- /wp:html -->";
     }
 
@@ -299,6 +342,7 @@ class ConverterPro extends Converter {
 
     // [vc_message]
     public function convert_vc_message($attrs, string $inner_content): string {
+        $attrs = is_array($attrs) ? $attrs : [];
         $content = trim($inner_content);
         if (empty($content)) return '';
 
@@ -311,7 +355,10 @@ class ConverterPro extends Converter {
 
         $css_classes = ['vc-message', 'vc-message-' . $notice_type];
         if ($closeable) $css_classes[] = 'vc-message-closeable';
-        if (!empty($attrs['el_class'])) $css_classes = array_merge($css_classes, $this->classes_from_el_class($attrs['el_class']));
+        [$custom_classes, $anchor] = $this->get_custom_classes_and_anchor($attrs);
+        if (!empty($custom_classes)) {
+            $css_classes = array_merge($css_classes, $custom_classes);
+        }
 
         $color_map = [
             'info'    => ['bg' => '#d1ecf1', 'border' => '#bee5eb', 'text' => '#0c5460'],
@@ -336,6 +383,7 @@ class ConverterPro extends Converter {
 
         $block_attrs = [];
         if (!empty($css_classes)) $block_attrs['className'] = implode(' ', $css_classes);
+        if ($anchor !== '') $block_attrs['anchor'] = $anchor;
         $style_obj = [];
         if (isset($color_map[$notice_type])) {
             $colors = $color_map[$notice_type];
@@ -351,14 +399,17 @@ class ConverterPro extends Converter {
         if (!empty($style_obj)) $block_attrs['style'] = $style_obj;
         $attrs_json     = wp_json_encode($block_attrs);
         $div_classes    = array_merge(['wp-block-group'], $css_classes);
+        $id_attr        = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
 
-        return "<!-- wp:group {$attrs_json} -->\n<div class=\"wp-block-group " . implode(' ', $div_classes) . "\">\n<!-- wp:paragraph -->\n<p>{$message_html}{$paragraph_content}</p>\n<!-- /wp:paragraph -->\n</div>\n<!-- /wp:group -->";
+        return "<!-- wp:group {$attrs_json} -->\n<div class=\"wp-block-group " . implode(' ', $div_classes) . "\"{$id_attr}>\n<!-- wp:paragraph -->\n<p>{$message_html}{$paragraph_content}</p>\n<!-- /wp:paragraph -->\n</div>\n<!-- /wp:group -->";
     }
 
     // [vc_gallery]
     public function convert_vc_gallery($attrs, string $inner_content): string {
+        $attrs = is_array($attrs) ? $attrs : [];
         $images = $attrs['images'] ?? '';
         if (empty($images)) return '';
+        [$custom_classes, $anchor] = $this->get_custom_classes_and_anchor($attrs);
 
         $image_ids = array_filter(array_map('intval', explode(',', $images)));
         if (empty($image_ids)) return '';
@@ -379,7 +430,11 @@ class ConverterPro extends Converter {
             if (isset($size_map[$requested])) $size_slug = $size_map[$requested];
         }
 
-        $block_attrs = ['linkTo' => $link_to, 'className' => 'columns-' . $columns];
+        $gallery_classes = ['columns-' . $columns];
+        if (!empty($custom_classes)) $gallery_classes = array_merge($gallery_classes, $custom_classes);
+
+        $block_attrs = ['linkTo' => $link_to, 'className' => implode(' ', $gallery_classes)];
+        if ($anchor !== '') $block_attrs['anchor'] = $anchor;
         if (!empty($attrs['gap'])) {
             $gap_map = ['0' => '0px', '5' => '5px', '10' => '10px', '15' => '15px', '20' => '20px', '25' => '25px', '30' => '30px', '35' => '35px'];
             if (isset($gap_map[$attrs['gap']])) $block_attrs['style'] = ['spacing' => ['blockGap' => $gap_map[$attrs['gap']]]];
@@ -405,11 +460,15 @@ class ConverterPro extends Converter {
         }
         if (empty($gallery_images)) return '';
 
-        return "<!-- wp:gallery {$attrs_json} -->\n<figure class=\"wp-block-gallery has-nested-images columns-default is-cropped columns-{$columns}\">{$gallery_images}</figure>\n<!-- /wp:gallery -->";
+        $figure_classes = array_merge(['wp-block-gallery', 'has-nested-images', 'columns-default', 'is-cropped', 'columns-' . $columns], $custom_classes);
+        $id_attr = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
+
+        return "<!-- wp:gallery {$attrs_json} -->\n<figure class=\"" . esc_attr(implode(' ', array_values(array_unique($figure_classes)))) . "\"{$id_attr}>{$gallery_images}</figure>\n<!-- /wp:gallery -->";
     }
 
     // [vc_media_grid]
     public function convert_vc_media_grid($attrs, string $inner_content): string {
+        $attrs = is_array($attrs) ? $attrs : [];
         if (!empty($attrs['include'])) {
             $gallery_attrs = ['images' => $attrs['include']];
             if (!empty($attrs['grid_columns_count'])) $gallery_attrs['interval'] = $attrs['grid_columns_count'];
@@ -417,6 +476,8 @@ class ConverterPro extends Converter {
             if (!empty($attrs['item_size'])) $gallery_attrs['img_size'] = $attrs['item_size'];
             if (!empty($attrs['onclick'])) $gallery_attrs['onclick'] = $attrs['onclick'];
             if (!empty($attrs['gap'])) $gallery_attrs['gap'] = $attrs['gap'];
+            if (!empty($attrs['el_class'])) $gallery_attrs['el_class'] = $attrs['el_class'];
+            if (!empty($attrs['el_id'])) $gallery_attrs['el_id'] = $attrs['el_id'];
             return $this->convert_vc_gallery($gallery_attrs, $inner_content);
         }
         return $this->preserve_grid_shortcode('vc_media_grid', $attrs, 'Note: This media grid requires WPBakery. Consider converting to a Gallery block.');

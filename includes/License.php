@@ -39,10 +39,10 @@ class License {
      */
     public static function register_settings(string $page = ''): void {
         if (empty($page)) {
-            $page = defined('STB_SLUG') ? STB_SLUG . '-settings' : 'shortcode-to-blocks-settings';
+            $page = defined('STBC_SLUG') ? STBC_SLUG . '-settings' : 'shortcode-to-blocks-settings';
         }
 
-        register_setting('stb_settings', self::OPTION_KEY, [
+        register_setting('stbc_settings', self::OPTION_KEY, [
             'type'              => 'string',
             'sanitize_callback' => 'sanitize_text_field',
         ]);
@@ -100,8 +100,8 @@ class License {
             return;
         }
 
-        // The license fields live inside the stb_settings form.
-        check_admin_referer('stb_settings-options');
+        // The license fields live inside the stbc_settings form.
+        check_admin_referer('stbc_settings-options');
 
         if (isset($_POST['stbp_license_activate'])) {
             self::activate();

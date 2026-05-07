@@ -2,7 +2,7 @@
 // admin/views/convert.php
 defined('ABSPATH') || exit;
 ?>
-<?php \STB\admin\Admin::render_tabs( (defined('STB_SLUG') ? STB_SLUG : 'shortcode-to-blocks') . '-convert' ); ?>
+<?php \STBC\admin\Admin::render_tabs( (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-convert' ); ?>
 
 <div class="wrap">
   <h1><?php esc_html_e('Batch convert', 'shortcode-to-blocks-pro'); ?></h1>

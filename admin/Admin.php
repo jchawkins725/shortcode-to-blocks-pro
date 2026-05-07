@@ -7,8 +7,8 @@ defined('ABSPATH') || exit;
  * Pro Admin — registers only Pro-only AJAX handlers.
  *
  * Menus, tabs, editor enqueue, and metabox are handled by the free plugin;
- * Pro injects its pages via the stb_register_admin_menus action and its
- * tabs via the stb_admin_tabs filter (both wired in the bootstrap).
+ * Pro injects its pages via the stbc_register_admin_menus action and its
+ * tabs via the stbc_admin_tabs filter (both wired in the bootstrap).
  */
 class Admin {
 
@@ -34,8 +34,8 @@ class Admin {
     public static function ajax_get_parents() {
         check_ajax_referer('stbp_get_parents');
 
-        $cap = class_exists('\\STB\\admin\\Settings')
-            ? \STB\admin\Settings::required_capability()
+        $cap = class_exists('\\STBC\\admin\\Settings')
+            ? \STBC\admin\Settings::required_capability()
             : 'manage_options';
 
         if (!current_user_can($cap)) {
@@ -81,11 +81,11 @@ class Admin {
 
     /**
      * Render tabs — delegates to the free plugin's render_tabs() since Pro
-     * tabs are already injected via the stb_admin_tabs filter.
+     * tabs are already injected via the stbc_admin_tabs filter.
      */
     public static function render_tabs(string $active = ''): void {
-        if (class_exists('\\STB\\admin\\Admin') && method_exists('\\STB\\admin\\Admin', 'render_tabs')) {
-            \STB\admin\Admin::render_tabs($active);
+        if (class_exists('\\STBC\\admin\\Admin') && method_exists('\\STBC\\admin\\Admin', 'render_tabs')) {
+            \STBC\admin\Admin::render_tabs($active);
         }
     }
 }
