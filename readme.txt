@@ -2,7 +2,7 @@
 Contributors: jchawkins725
 Tags: gutenberg, wpbakery, shortcode, converter, migration
 Requires at least: 6.0
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.0.0
 License: GPLv2 or later
@@ -27,7 +27,7 @@ The free plugin handles the core layout and content shortcodes. Pro adds convert
 * **Video** — `vc_video` → Embed block (YouTube, Vimeo, or HTML)
 * **Google Maps** — `vc_gmaps` → Embed block
 * **Raw JavaScript** — `vc_raw_js` → Custom HTML block
-* **Icon** — `vc_icon` → Custom HTML block with FontAwesome / icon classes
+* **Icon** — `vc_icon` → Native Gutenberg core/icon block with advanced FontAwesome/icon slug mapping (Pro: extended mapping)
 * **Tabs** — `vc_tta_tabs`, `vc_tabs` → Heading + content structures
 * **Tours** — `vc_tta_tour`, `vc_tour` → Heading + content structures
 * **Accordions** — `vc_tta_accordion`, `vc_accordion` → Heading + content structures

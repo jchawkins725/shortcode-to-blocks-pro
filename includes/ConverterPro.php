@@ -222,61 +222,229 @@ class ConverterPro extends Converter {
     public function convert_vc_icon($attrs, $inner_content = ''): string {
         $attrs = is_array($attrs) ? $attrs : [];
         $icon_class = '';
-        foreach (['icon_fontawesome', 'icon_openiconic', 'icon_typicons', 'icon_entypo', 'icon_linecons'] as $key) {
-            if (!empty($attrs[$key])) { $icon_class = $attrs[$key]; break; }
+        $icon_type = strtolower(trim((string) ($attrs['type'] ?? '')));
+        $type_map = [
+            'material' => 'icon_material',
+            'fontawesome' => 'icon_fontawesome',
+            'openiconic' => 'icon_openiconic',
+            'typicons' => 'icon_typicons',
+            'entypo' => 'icon_entypo',
+            'linecons' => 'icon_linecons',
+        ];
+
+        if ($icon_type !== '' && !empty($type_map[$icon_type]) && !empty($attrs[$type_map[$icon_type]])) {
+            $icon_class = $attrs[$type_map[$icon_type]];
+        } else {
+            foreach (['icon_material', 'icon_fontawesome', 'icon_openiconic', 'icon_typicons', 'icon_entypo', 'icon_linecons'] as $key) {
+                if (!empty($attrs[$key])) { $icon_class = $attrs[$key]; break; }
+            }
         }
         if (empty($icon_class)) return '';
+
         [$custom_classes, $anchor] = $this->get_custom_classes_and_anchor($attrs);
 
         $size_map  = ['xs' => '12px', 'sm' => '16px', 'md' => '24px', 'lg' => '32px', 'xl' => '48px'];
         $font_size = $size_map[$attrs['size'] ?? 'md'] ?? '24px';
-        $styles    = ["font-size: {$font_size}"];
 
-        if (!empty($attrs['color'])) {
-            $styles[] = "color: " . preg_replace('/[^#a-zA-Z0-9(),.% -]/', '', $attrs['color']);
-        }
+        $icon_token = $this->extract_vc_icon_token($icon_class, $icon_type);
+        $icon_slug  = $this->resolve_core_icon_slug($icon_token);
+
+        $icon_color = !empty($attrs['color'])
+            ? preg_replace('/[^#a-zA-Z0-9(),.% -]/', '', $attrs['color'])
+            : '';
 
         $background_style = $attrs['background_style'] ?? '';
-        $background_color = !empty($attrs['background_color']) ? preg_replace('/[^#a-zA-Z0-9(),.% -]/', '', $attrs['background_color']) : '';
+        $background_color = !empty($attrs['custom_background_color'])
+            ? preg_replace('/[^#a-zA-Z0-9(),.% -]/', '', $attrs['custom_background_color'])
+            : (!empty($attrs['background_color']) && $attrs['background_color'] !== 'custom'
+                ? preg_replace('/[^#a-zA-Z0-9(),.% -]/', '', $attrs['background_color'])
+                : '');
 
-        if ($background_style && $background_color) {
-            $styles[] = "background-color: {$background_color}";
-            $styles[] = "padding: 8px";
-            $styles[] = "display: inline-block";
-            if ($background_style === 'rounded') $styles[] = "border-radius: 50%";
-            elseif ($background_style === 'boxed') $styles[] = "border-radius: 4px";
+        $align = $attrs['align'] ?? 'left';
+        $link_data = $this->parse_vc_icon_link($attrs['link'] ?? '');
+
+        if ($this->supports_core_icon_block() && empty($link_data['href'])) {
+            $class_names = array_merge(['vc-icon-wrapper'], $custom_classes);
+
+            $block_attrs = [
+                'icon'      => 'core/' . $icon_slug,
+                'className' => implode(' ', array_values(array_unique($class_names))),
+            ];
+
+            if (in_array($align, ['left', 'center', 'right'], true)) {
+                $block_attrs['align'] = $align;
+            }
+            if ($anchor !== '') {
+                $block_attrs['anchor'] = $anchor;
+            }
+
+            $style = [
+                'dimensions' => ['width' => $font_size],
+            ];
+
+            if ($icon_color !== '') {
+                $style['color'] = ['text' => $icon_color];
+            }
+
+            if ($background_style && $background_color) {
+                $style['color']['background'] = $background_color;
+                $style['spacing']['padding'] = [
+                    'top' => '8px',
+                    'right' => '8px',
+                    'bottom' => '8px',
+                    'left' => '8px',
+                ];
+
+                if ($background_style === 'rounded') {
+                    $style['border']['radius'] = [
+                        'topLeft' => '999px',
+                        'topRight' => '999px',
+                        'bottomLeft' => '999px',
+                        'bottomRight' => '999px',
+                    ];
+                } elseif ($background_style === 'boxed') {
+                    $style['border']['radius'] = [
+                        'topLeft' => '4px',
+                        'topRight' => '4px',
+                        'bottomLeft' => '4px',
+                        'bottomRight' => '4px',
+                    ];
+                }
+            }
+
+            $block_attrs['style'] = $style;
+            return '<!-- wp:icon ' . wp_json_encode($block_attrs) . ' /-->';
         }
 
-        $align          = $attrs['align'] ?? 'left';
+        $styles = ["font-size: {$font_size}"];
+        if ($icon_color !== '') {
+            $styles[] = "color: {$icon_color}";
+        }
+        if ($background_style && $background_color) {
+            $styles[] = "background-color: {$background_color}";
+            $styles[] = 'padding: 8px';
+            $styles[] = 'display: inline-block';
+            if ($background_style === 'rounded') $styles[] = 'border-radius: 50%';
+            elseif ($background_style === 'boxed') $styles[] = 'border-radius: 4px';
+        }
+
         $wrapper_styles = [];
         if ($align === 'center') $wrapper_styles[] = "text-align: center";
         elseif ($align === 'right') $wrapper_styles[] = "text-align: right";
 
         $style_attr = !empty($styles) ? ' style="' . esc_attr(implode('; ', $styles)) . '"' : '';
-        $icon_html  = '<i class="' . esc_attr($icon_class) . '"' . $style_attr . '></i>';
+        $fallback_class = sanitize_html_class($icon_token !== '' ? $icon_token : $icon_slug);
+        $icon_html  = '<span class="stbp-icon-fallback stbp-icon-' . esc_attr($fallback_class) . '"' . $style_attr . ' aria-hidden="true">*</span>';
 
-        if (!empty($attrs['link'])) {
-            $url = $target = $title = '';
-            foreach (explode('|', $attrs['link']) as $part) {
-                if (strpos($part, 'url:') === 0) $url = esc_url(urldecode(substr($part, 4)));
-                elseif (strpos($part, 'target:') === 0) { $t = substr($part, 7); $target = in_array($t, ['_blank','_self','_parent','_top']) ? $t : ''; }
-                elseif (strpos($part, 'title:') === 0) $title = esc_attr(substr($part, 6));
+        if (!empty($link_data['href'])) {
+            $link_attrs = ['href="' . esc_url($link_data['href']) . '"'];
+            if (!empty($link_data['target'])) {
+                $link_attrs[] = 'target="' . esc_attr($link_data['target']) . '"';
+                if ($link_data['target'] === '_blank') {
+                    $link_attrs[] = 'rel="noopener"';
+                }
             }
-            if (empty($url) && filter_var($attrs['link'], FILTER_VALIDATE_URL)) $url = esc_url($attrs['link']);
-
-            if ($url) {
-                $link_attrs = ['href="' . $url . '"'];
-                if ($target) { $link_attrs[] = 'target="' . $target . '"'; if ($target === '_blank') $link_attrs[] = 'rel="noopener"'; }
-                if ($title) $link_attrs[] = 'title="' . $title . '"';
-                $icon_html = '<a ' . implode(' ', $link_attrs) . '>' . $icon_html . '</a>';
+            if (!empty($link_data['title'])) {
+                $link_attrs[] = 'title="' . esc_attr($link_data['title']) . '"';
             }
+            $icon_html = '<a ' . implode(' ', $link_attrs) . '>' . $icon_html . '</a>';
         }
 
         $wrapper_classes = array_merge(['vc-icon-wrapper'], $custom_classes);
         $wrapper_style_attr = !empty($wrapper_styles) ? ' style="' . esc_attr(implode('; ', $wrapper_styles)) . '"' : '';
         $id_attr = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
         $final_html = '<div class="' . esc_attr(implode(' ', array_values(array_unique($wrapper_classes)))) . '"' . $id_attr . $wrapper_style_attr . '>' . $icon_html . '</div>';
-        return "<!-- wp:html -->\n{$final_html}\n<!-- /wp:html -->";
+        $note = '<!-- Shortcode to Blocks Pro: used HTML fallback for vc_icon (requires WordPress 7.0+ for core/icon, and linked icons are preserved as HTML). -->';
+        return "{$note}\n<!-- wp:html -->\n{$final_html}\n<!-- /wp:html -->";
+    }
+
+    private function supports_core_icon_block(): bool {
+        global $wp_version;
+        $current = is_string($wp_version) && $wp_version !== '' ? $wp_version : get_bloginfo('version');
+        return version_compare($current, '7.0', '>=');
+    }
+
+    private function parse_vc_icon_link(string $raw_link): array {
+        $raw_link = trim($raw_link);
+        if ($raw_link === '') {
+            return ['href' => '', 'target' => '', 'title' => ''];
+        }
+
+        $href = '';
+        $target = '';
+        $title = '';
+
+        foreach (explode('|', $raw_link) as $part) {
+            if (strpos($part, 'url:') === 0) {
+                $href = urldecode(substr($part, 4));
+            } elseif (strpos($part, 'target:') === 0) {
+                $candidate = substr($part, 7);
+                $target = in_array($candidate, ['_blank', '_self', '_parent', '_top'], true) ? $candidate : '';
+            } elseif (strpos($part, 'title:') === 0) {
+                $title = substr($part, 6);
+            }
+        }
+
+        if ($href === '' && filter_var($raw_link, FILTER_VALIDATE_URL)) {
+            $href = $raw_link;
+        }
+
+        return [
+            'href' => $href,
+            'target' => $target,
+            'title' => $title,
+        ];
+    }
+
+    private function extract_vc_icon_token(string $icon_class, string $icon_type): string {
+        $icon_class = trim($icon_class);
+        if ($icon_class === '') {
+            return '';
+        }
+
+        if ($icon_type === 'material' || strpos($icon_class, 'vc-material') !== false) {
+            if (preg_match('/(?:^|\s)vc-material-([A-Za-z0-9_]+)\b/', $icon_class, $matches)) {
+                return strtolower(str_replace('_', '-', $matches[1]));
+            }
+        }
+
+        if (preg_match('/(?:^|\s)(?:fa|fas|far|fab|fal|fad)-([A-Za-z0-9-]+)\b/', $icon_class, $matches)) {
+            return strtolower($matches[1]);
+        }
+        if (preg_match('/(?:^|\s)fa\s+fa-([A-Za-z0-9-]+)\b/', $icon_class, $matches)) {
+            return strtolower($matches[1]);
+        }
+
+        $tokens = preg_split('/\s+/', strtolower($icon_class));
+        if (empty($tokens)) {
+            return '';
+        }
+
+        $ignore = [
+            'vc-material', 'material-icons', 'fa', 'fas', 'far', 'fab', 'fal', 'fad',
+            'icon', 'typcn', 'entypo', 'linecons',
+        ];
+
+        for ($i = count($tokens) - 1; $i >= 0; $i--) {
+            $token = trim($tokens[$i]);
+            if ($token === '' || in_array($token, $ignore, true)) {
+                continue;
+            }
+
+            $token = preg_replace('/^(vc-material-|fa-|typcn-|entypo-|linecons-)/', '', $token);
+            $token = str_replace('_', '-', $token);
+            $token = preg_replace('/[^a-z0-9-]/', '', $token);
+
+            if ($token !== '') {
+                return $token;
+            }
+        }
+
+        return '';
+    }
+
+    private function resolve_core_icon_slug(string $token): string {
+        return IconMapper::resolveCoreIconSlug($token);
     }
 
     // Unified tab/tour/accordion helper

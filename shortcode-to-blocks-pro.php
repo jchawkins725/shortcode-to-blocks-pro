@@ -53,18 +53,40 @@ add_action('plugins_loaded', function () {
     /* ---- Admin hooks — license settings always available ---- */
     if (is_admin()) {
         add_action('stbc_register_settings', [\STBP\includes\License::class, 'register_settings']);
-        add_action('admin_init', [\STBP\includes\License::class, 'handle_actions']);
+
+        // Keep Settings at the end of the left sidebar submenu list.
+        add_action('admin_menu', function () {
+            $stbp_parent_slug = defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks';
+            $stbp_settings_slug = $stbp_parent_slug . '-settings';
+
+            global $submenu;
+            if (empty($submenu[$stbp_parent_slug]) || !is_array($submenu[$stbp_parent_slug])) {
+                return;
+            }
+
+            foreach ($submenu[$stbp_parent_slug] as $stbp_idx => $stbp_item) {
+                if (!isset($stbp_item[2]) || $stbp_item[2] !== $stbp_settings_slug) {
+                    continue;
+                }
+
+                $stbp_settings_item = $stbp_item;
+                unset($submenu[$stbp_parent_slug][$stbp_idx]);
+                $submenu[$stbp_parent_slug][] = $stbp_settings_item;
+                break;
+            }
+        }, 999);
     }
 
     /* ---- Gate Pro features behind a valid license ---- */
-    if (!\STBP\includes\License::is_valid()) {
+    if (!\STBP\includes\License::is_active()) {
         if (is_admin()) {
             add_action('admin_notices', function () {
+                $settings_url = admin_url('admin.php?page=' . (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-settings');
                 echo '<div class="notice notice-warning is-dismissible"><p>';
                 printf(
                     // translators: 1: opening anchor tag, 2: closing anchor tag
                     esc_html__('Shortcode to Blocks Pro: please %1$sactivate your license%2$s to unlock Pro features.', 'shortcode-to-blocks-pro'),
-                    '<a href="' . esc_url(admin_url('admin.php?page=' . (defined('STBC_SLUG') ? STBC_SLUG : 'shortcode-to-blocks') . '-settings')) . '">',
+                    '<a href="' . esc_url($settings_url) . '">',
                     '</a>'
                 );
                 echo '</p></div>';

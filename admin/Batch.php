@@ -6,6 +6,40 @@ use STBP\includes\Logger;
 defined('ABSPATH') || exit;
 
 class Batch {
+    private const WPBAKERY_META_KEYS = [
+        '_wpb_vc_js_status',
+        '_wpb_js_status',
+        '_wpb_vc_post_settings',
+        '_vc_post_settings',
+        '_wpb_shortcodes_custom_css',
+        '_wpb_post_custom_css',
+        '_wpb_custom_css',
+    ];
+
+    private static function is_wpbakery_meta_key(string $key): bool {
+        if ($key === '_vc_post_settings') {
+            return true;
+        }
+
+        return strpos($key, '_wpb_') === 0;
+    }
+
+    private static function get_wpbakery_meta_keys_for_post(int $post_id): array {
+        $all_meta = get_post_meta($post_id);
+        if (! is_array($all_meta) || empty($all_meta)) {
+            return self::WPBAKERY_META_KEYS;
+        }
+
+        $keys = self::WPBAKERY_META_KEYS;
+        foreach (array_keys($all_meta) as $key) {
+            if (is_string($key) && self::is_wpbakery_meta_key($key)) {
+                $keys[] = $key;
+            }
+        }
+
+        return array_values(array_unique($keys));
+    }
+
     /**
      * Convert a single post (page) from WPBakery shortcodes to blocks.
      * Returns true on success, false or WP_Error on failure.
@@ -38,21 +72,14 @@ class Batch {
 
         // Only update if content changes
         if ($new_content !== $post->post_content) {
-            // Handle page template validation (same logic as handle_batch method)
-            $tpl = get_page_template_slug($post_id);
-            if ($tpl && 'default' !== $tpl) {
-                $post_type = get_post_type($post_id);
-                $allowed   = wp_get_theme()->get_page_templates(null, $post_type);
-                if (! isset($allowed[$tpl])) {
-                    update_post_meta($post_id, '_wp_page_template', 'default');
-                }
-            }
+            self::backup_wpbakery_state((int) $post_id);
 
             $res = wp_update_post(['ID' => $post_id, 'post_content' => $new_content], true);
             if (is_wp_error($res)) {
                 Logger::log('batch', 'error', 'Failed to update: ' . $res->get_error_message(), $post_id);
                 return $res;
             }
+            self::clear_wpbakery_rendering_state((int) $post_id);
             update_post_meta($post_id, '_stbp_converted', 1);
             update_post_meta($post_id, '_stbp_converted_ts', time());
             if ($batch_id) {
@@ -378,18 +405,11 @@ class Batch {
             $new_content = $converter->convert_vc_shortcodes_recursive($post->post_content);
 
             if ($new_content !== $post->post_content) {
-                // normalize invalid page templates
-                $tpl = get_page_template_slug($pid); // e.g., 'templates/landing.php' or ''
-                if ($tpl && 'default' !== $tpl) {
-                    $post_type = get_post_type($pid);
-                    $allowed   = wp_get_theme()->get_page_templates(null, $post_type); // [ 'templates/landing.php' => 'Landing' ]
-                    if (! isset($allowed[$tpl])) {
-                        update_post_meta($pid, '_wp_page_template', 'default');
-                    }
-                }
+                self::backup_wpbakery_state((int) $pid);
 
                 $res = wp_update_post(['ID'=>$pid,'post_content'=>$new_content], true);
                 if (! is_wp_error($res)) {
+                    self::clear_wpbakery_rendering_state((int) $pid);
                     $processed++;
                     if (!empty($batch_id)) {
                         update_post_meta($pid, '_stbp_batch_id', sanitize_text_field($batch_id));
@@ -533,6 +553,9 @@ class Batch {
                 delete_post_meta($pid, '_stbp_converted');
                 delete_post_meta($pid, '_stbp_converted_ts');
                 delete_post_meta($pid, '_stbp_batch_id');
+                self::restore_wpbakery_state((int) $pid);
+                delete_post_meta($pid, '_stbp_original_page_template');
+                delete_post_meta($pid, '_stbp_original_wpb_meta');
                 update_post_meta($pid, '_stbp_has_vc', '1');
 
                 Logger::log('batch-revert', 'success', 'Reverted via batch', $pid);
@@ -649,12 +672,65 @@ class Batch {
         delete_post_meta($post_id, '_stbp_original_content');
         delete_post_meta($post_id, '_stbp_original_content_ts');
         delete_post_meta($post_id, '_stbp_batch_id');
+        self::restore_wpbakery_state($post_id);
+        delete_post_meta($post_id, '_stbp_original_page_template');
+        delete_post_meta($post_id, '_stbp_original_wpb_meta');
 
         // set VC flag so it’s eligible for conversion again
         update_post_meta($post_id, '_stbp_has_vc', '1');
 
         Logger::log('revert', 'success', sprintf('Reverted post ID %d from backup', $post_id), $post_id);
         return true;
+    }
+
+    private static function backup_wpbakery_state(int $post_id): void {
+        if (! get_post_meta($post_id, '_stbp_original_page_template', true)) {
+            $tpl = get_post_meta($post_id, '_wp_page_template', true);
+            update_post_meta($post_id, '_stbp_original_page_template', is_string($tpl) && $tpl !== '' ? $tpl : 'default');
+        }
+
+        if (! get_post_meta($post_id, '_stbp_original_wpb_meta', true)) {
+            $snapshot = [];
+            foreach (self::get_wpbakery_meta_keys_for_post($post_id) as $key) {
+                $value = get_post_meta($post_id, $key, true);
+                if ($value !== '' && $value !== null) {
+                    $snapshot[$key] = $value;
+                }
+            }
+            if (! empty($snapshot)) {
+                update_post_meta($post_id, '_stbp_original_wpb_meta', $snapshot);
+            }
+        }
+    }
+
+    private static function clear_wpbakery_rendering_state(int $post_id): void {
+        update_post_meta($post_id, '_wp_page_template', 'default');
+        foreach (self::get_wpbakery_meta_keys_for_post($post_id) as $key) {
+            delete_post_meta($post_id, $key);
+        }
+    }
+
+    private static function restore_wpbakery_state(int $post_id): void {
+        $tpl = get_post_meta($post_id, '_stbp_original_page_template', true);
+        if (is_string($tpl) && $tpl !== '') {
+            update_post_meta($post_id, '_wp_page_template', $tpl);
+        }
+
+        $snapshot = get_post_meta($post_id, '_stbp_original_wpb_meta', true);
+
+        foreach (self::get_wpbakery_meta_keys_for_post($post_id) as $key) {
+            delete_post_meta($post_id, $key);
+        }
+
+        if (! is_array($snapshot) || empty($snapshot)) {
+            return;
+        }
+
+        foreach ($snapshot as $key => $value) {
+            if (is_string($key) && self::is_wpbakery_meta_key($key)) {
+                update_post_meta($post_id, $key, $value);
+            }
+        }
     }
 
     /**
