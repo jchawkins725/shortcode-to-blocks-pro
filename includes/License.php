@@ -150,14 +150,11 @@ class License {
 
 		if (is_wp_error($response)) {
 			// API error — assume invalid rather than blocking.
-			error_log('STBP License API error: ' . $response->get_error_message());
-			error_log('STBP License API URL: ' . $api_url);
 			return false;
 		}
 
 		$status_code = wp_remote_retrieve_response_code($response);
 		if ($status_code !== 200) {
-			error_log(sprintf('STBP License API returned %d. Response: %s', $status_code, wp_remote_retrieve_body($response)));
 			return false;
 		}
 
