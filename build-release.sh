@@ -30,6 +30,9 @@ rsync -a \
   --exclude='*.log' \
   --exclude='*.map' \
   --exclude='.gitignore' \
+  --exclude='.env' \
+  --exclude='.env.*' \
+  --exclude='*.md' \
   --exclude='build-release.sh' \
   "$ROOT_DIR/" "$STAGE_DIR/"
 
