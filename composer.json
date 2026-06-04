@@ -1,0 +1,14 @@
+{
+  "name": "jhawkins/shortcode-to-blocks-pro",
+  "description": "Pro add-on for Shortcode to Blocks plugin",
+  "type": "wordpress-plugin",
+  "require": {
+    "php": ">=7.4",
+    "yahnis-elsts/plugin-update-checker": "^5.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "STBP\\": "includes/"
+    }
+  }
+}

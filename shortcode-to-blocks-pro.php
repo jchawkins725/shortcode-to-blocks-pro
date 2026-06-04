@@ -15,6 +15,11 @@
 
 defined('ABSPATH') || exit;
 
+// Composer autoloader for dependencies (Plugin Update Checker, etc.)
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+	require_once __DIR__ . '/vendor/autoload.php';
+}
+
 define('STBP_VERSION', '1.0.0');
 define('STBP_FILE', __FILE__);
 define('STBP_PATH', plugin_dir_path(__FILE__));
@@ -49,6 +54,9 @@ add_action('plugins_loaded', function () {
         });
         return; // bail — free plugin is missing
     }
+
+    /* ---- Initialize auto-updates via GitHub Releases ---- */
+    \STBP\includes\Updater::init();
 
     /* ---- Admin hooks — license settings always available ---- */
     if (is_admin()) {

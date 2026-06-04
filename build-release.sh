@@ -36,6 +36,14 @@ rsync -a \
   --exclude='build-release.sh' \
   "$ROOT_DIR/" "$STAGE_DIR/"
 
+# Install production Composer dependencies (update checker library)
+if [ -f "$STAGE_DIR/composer.json" ]; then
+  echo "Installing production dependencies..."
+  (cd "$STAGE_DIR" && composer install --no-dev --optimize-autoloader --quiet)
+  # Remove composer files after installing dependencies
+  rm -f "$STAGE_DIR/composer.json" "$STAGE_DIR/composer.lock"
+fi
+
 rm -f "$ZIP_PATH"
 
 (
