@@ -4,7 +4,7 @@ Tags: gutenberg, wpbakery, shortcode, converter, migration
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -101,15 +101,17 @@ The free plugin continues to work for single-post conversion with its 11 basic c
 
 == Screenshots ==
 
-1. Convert / Revert buttons in the editor sidebar panel
-2. Batch conversion page with dry-run and filtering
+1. Dashboard
+2. Batch conversion page
 3. Batch revert page
 4. Tools page with backup and log management
 5. Logs page with conversion history and CSV export
 6. Converted Posts list with filtering
-7. Settings page with license key activation
 
 == Changelog ==
+
+= 1.0.1 =
+* Added plugin screenshots and updated stable release version.
 
 = 1.0.0 =
 * Initial release as a Pro add-on for Shortcode to Blocks (free)
@@ -127,6 +129,9 @@ The free plugin continues to work for single-post conversion with its 11 basic c
 * Auto-purge WP-Cron for backups older than 1 year
 
 == Upgrade Notice ==
+
+= 1.0.1 =
+Added plugin screenshots and updated stable release version.
 
 = 1.0.0 =
 First release. Requires the free Shortcode to Blocks plugin. Test on staging before converting production content.
