@@ -7,7 +7,14 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 STAGE_ROOT="$(mktemp -d)"
 STAGE_DIR="$STAGE_ROOT/$PLUGIN_SLUG"
-ZIP_PATH="$DIST_DIR/$PLUGIN_SLUG.zip"
+
+VERSION="$(grep -E '^\s*\*\s*Version:' "$ROOT_DIR/$PLUGIN_SLUG.php" | head -n 1 | sed -E 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*//')"
+if [ -z "$VERSION" ]; then
+  echo "Unable to determine plugin version from $ROOT_DIR/$PLUGIN_SLUG.php" >&2
+  exit 1
+fi
+
+ZIP_PATH="$DIST_DIR/$PLUGIN_SLUG-$VERSION.zip"
 
 cleanup() {
   rm -rf "$STAGE_ROOT"
