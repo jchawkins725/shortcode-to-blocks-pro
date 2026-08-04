@@ -4,7 +4,7 @@ Tags: gutenberg, wpbakery, shortcode, converter, migration
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -109,6 +109,10 @@ The free plugin continues to work for single-post conversion with its 11 basic c
 6. Converted Posts list with filtering
 
 == Changelog ==
+= 1.0.2 =
+* Compatibility: Added support for WPBakery 9.0 media-grid column settings, including five- and six-column grids.
+* Fix: Serialize the selected column count as a native Gallery block attribute so converted grids render with the intended layout.
+* Fix: Preserve media-grid gaps stored as CSS lengths while retaining compatibility with legacy WPBakery attributes.
 
 = 1.0.1 =
 * Added plugin screenshots and updated stable release version.
@@ -129,6 +133,8 @@ The free plugin continues to work for single-post conversion with its 11 basic c
 * Auto-purge WP-Cron for backups older than 1 year
 
 == Upgrade Notice ==
+= 1.0.2 =
+Adds WPBakery 9.0 media-grid compatibility while retaining support for older WPBakery versions.
 
 = 1.0.1 =
 Added plugin screenshots and updated stable release version.

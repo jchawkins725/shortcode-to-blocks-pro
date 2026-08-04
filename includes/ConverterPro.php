@@ -598,14 +598,12 @@ class ConverterPro extends Converter {
             if (isset($size_map[$requested])) $size_slug = $size_map[$requested];
         }
 
-        $gallery_classes = ['columns-' . $columns];
-        if (!empty($custom_classes)) $gallery_classes = array_merge($gallery_classes, $custom_classes);
-
-        $block_attrs = ['linkTo' => $link_to, 'className' => implode(' ', $gallery_classes)];
+        $block_attrs = ['columns' => $columns, 'linkTo' => $link_to];
+        if (!empty($custom_classes)) $block_attrs['className'] = implode(' ', $custom_classes);
         if ($anchor !== '') $block_attrs['anchor'] = $anchor;
-        if (!empty($attrs['gap'])) {
-            $gap_map = ['0' => '0px', '5' => '5px', '10' => '10px', '15' => '15px', '20' => '20px', '25' => '25px', '30' => '30px', '35' => '35px'];
-            if (isset($gap_map[$attrs['gap']])) $block_attrs['style'] = ['spacing' => ['blockGap' => $gap_map[$attrs['gap']]]];
+        if (array_key_exists('gap', $attrs)) {
+            $gap = $this->normalize_gallery_gap($attrs['gap']);
+            if ($gap !== '') $block_attrs['style'] = ['spacing' => ['blockGap' => $gap]];
         }
         $attrs_json = wp_json_encode($block_attrs);
 
@@ -628,7 +626,7 @@ class ConverterPro extends Converter {
         }
         if (empty($gallery_images)) return '';
 
-        $figure_classes = array_merge(['wp-block-gallery', 'has-nested-images', 'columns-default', 'is-cropped', 'columns-' . $columns], $custom_classes);
+        $figure_classes = array_merge(['wp-block-gallery', 'has-nested-images', 'columns-' . $columns, 'is-cropped'], $custom_classes);
         $id_attr = $anchor !== '' ? ' id="' . esc_attr($anchor) . '"' : '';
 
         return "<!-- wp:gallery {$attrs_json} -->\n<figure class=\"" . esc_attr(implode(' ', array_values(array_unique($figure_classes)))) . "\"{$id_attr}>{$gallery_images}</figure>\n<!-- /wp:gallery -->";
@@ -639,11 +637,17 @@ class ConverterPro extends Converter {
         $attrs = is_array($attrs) ? $attrs : [];
         if (!empty($attrs['include'])) {
             $gallery_attrs = ['images' => $attrs['include']];
-            if (!empty($attrs['grid_columns_count'])) $gallery_attrs['interval'] = $attrs['grid_columns_count'];
-            elseif (!empty($attrs['columns'])) $gallery_attrs['interval'] = $attrs['columns'];
+            // WPBakery 9.0 uses items_per_row. Keep the older attribute names
+            // as fallbacks so grids saved by previous releases still convert.
+            foreach (['items_per_row', 'grid_columns_count', 'columns'] as $columns_attr) {
+                if (isset($attrs[$columns_attr]) && $attrs[$columns_attr] !== '') {
+                    $gallery_attrs['interval'] = $attrs[$columns_attr];
+                    break;
+                }
+            }
             if (!empty($attrs['item_size'])) $gallery_attrs['img_size'] = $attrs['item_size'];
             if (!empty($attrs['onclick'])) $gallery_attrs['onclick'] = $attrs['onclick'];
-            if (!empty($attrs['gap'])) $gallery_attrs['gap'] = $attrs['gap'];
+            if (isset($attrs['gap']) && $attrs['gap'] !== '') $gallery_attrs['gap'] = $attrs['gap'];
             if (!empty($attrs['el_class'])) $gallery_attrs['el_class'] = $attrs['el_class'];
             if (!empty($attrs['el_id'])) $gallery_attrs['el_id'] = $attrs['el_id'];
             return $this->convert_vc_gallery($gallery_attrs, $inner_content);
@@ -659,5 +663,27 @@ class ConverterPro extends Converter {
     // [vc_masonry_media_grid]
     public function convert_vc_masonry_media_grid($attrs, string $inner_content): string {
         return $this->preserve_grid_shortcode('vc_masonry_media_grid', $attrs, 'Note: This masonry layout requires WPBakery. Consider using a Gallery block or masonry plugin.');
+    }
+
+    /**
+     * Normalize legacy numeric grid gaps and WPBakery 9.0 CSS-length gaps.
+     */
+    private function normalize_gallery_gap($value): string {
+        if (!is_scalar($value)) return '';
+
+        $gap = strtolower(trim((string) $value));
+        if ($gap === '') return '';
+
+        // Older WPBakery versions stored unitless pixel values.
+        if (preg_match('/^(?:\d+(?:\.\d+)?|\.\d+)$/', $gap)) {
+            return $gap . 'px';
+        }
+
+        // WPBakery 9.0's number control can store a value with a CSS unit.
+        if (preg_match('/^(?:\d+(?:\.\d+)?|\.\d+)(?:px|em|rem|%|vw|vh|vmin|vmax|ch|ex|cm|mm|in|pt|pc)$/', $gap)) {
+            return $gap;
+        }
+
+        return '';
     }
 }
