@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Shortcode to Blocks Pro
  * Description: Pro add-on for Shortcode to Blocks — adds batch/bulk convert, advanced shortcode converters, logging, tools, and license key activation.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Jonathan Hawkins
  * Author URI: https://www.jonathanchawkins.com/
  * License:     GPLv2 or later
@@ -20,7 +20,7 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 	require_once __DIR__ . '/vendor/autoload.php';
 }
 
-define('STBP_VERSION', '1.0.3');
+define('STBP_VERSION', '1.0.4');
 define('STBP_FILE', __FILE__);
 define('STBP_PATH', plugin_dir_path(__FILE__));
 define('STBP_URL', plugin_dir_url(__FILE__));
