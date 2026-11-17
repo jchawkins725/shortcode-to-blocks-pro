@@ -1,121 +1,50 @@
-# Shortcode to Blocks Pro - Release Process
+# Shortcode to Blocks Pro release process
 
-## 📦 How to Release a New Version
+## Normal private release (after 1.0.5)
 
-### 1. **Update Version Numbers**
+1. Update the plugin header, `STBP_VERSION`, `readme.txt` stable tag, changelog,
+   and upgrade notice.
+2. Build the production archive:
 
-Edit these files and bump the version:
-
-```php
-// shortcode-to-blocks-pro.php (lines 4 and 17)
-* Version: 1.1.0
-define('STBP_VERSION', '1.1.0');
-```
-
-### 2. **Build the Production ZIP**
-
-```bash
-cd /Users/jhawkins/Documents/Workspace/plugins/shortcode-to-blocks-pro
-composer install  # Install update checker library first
-./build-release.sh
-```
-
-This creates: `dist/shortcode-to-blocks-pro.zip`
-
-### 3. **Create GitHub Release**
-
-1. **Push your changes:**
    ```bash
-   git add .
-   git commit -m "Release v1.1.0"
-   git tag v1.1.0
-   git push origin main
-   git push origin v1.1.0
+   ./build-release.sh
    ```
 
-2. **Create release on GitHub:**
-   - Go to: https://github.com/YOUR_USERNAME/shortcode-to-blocks-pro/releases
-   - Click "Create a new release"
-   - Tag: `v1.1.0`
-   - Title: `Version 1.1.0`
-   - Description: Release notes (what's new, bug fixes, etc.)
-   - **Attach file:** Upload `dist/shortcode-to-blocks-pro.zip`
-   - Click "Publish release"
+3. Verify the generated `dist/shortcode-to-blocks-pro-<version>.zip`, including
+   its archive root, PHP syntax, size, and SHA-256 checksum.
+4. From the site's `astro-site` directory, dry-run the private upload, then use
+   its printed checksum-bound confirmation phrase for the production upload:
 
-### 4. **Users Get Notified Automatically**
-
-Within 12 hours, WordPress will check for updates and show:
-- Update notification in their plugin list
-- One-click update button (if license is active)
-- "View details" link showing your release notes
-
----
-
-## 🔄 Update Flow for Customers
-
-1. **Customer has active license** → See update notification → Click update → Done ✅
-2. **Customer has expired license** → See notification but can't update → Prompted to renew
-
----
-
-## ⚙️ First-Time Setup
-
-### Install Composer Dependencies
-
-```bash
-cd /Users/jhawkins/Documents/Workspace/plugins/shortcode-to-blocks-pro
-composer install
-```
-
-### Update GitHub Repo URL
-
-Edit `includes/Updater.php` line 24 and replace with your actual repo:
-
-```php
-'https://github.com/YOUR_USERNAME/shortcode-to-blocks-pro',
-```
-
-### Create GitHub Repository
-
-1. Create a **private** repo: `shortcode-to-blocks-pro`
-2. Push your plugin code:
    ```bash
-   cd /Users/jhawkins/Documents/Workspace/plugins/shortcode-to-blocks-pro
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/YOUR_USERNAME/shortcode-to-blocks-pro.git
-   git push -u origin main
+   npm run publish:pro-release -- /absolute/path/to/the/versioned.zip
+   npm run publish:pro-release -- /absolute/path/to/the/versioned.zip --apply --confirm-production-upload
    ```
 
----
+5. Mark the release current through that publisher and verify the licensed
+   update path from a test WordPress installation.
+6. Commit, tag, and push the source. Do not attach the production ZIP to a public
+   GitHub release after the 1.0.5 bridge.
 
-## 📝 Version Numbering
+The update service validates the license and site before returning a 48-hour
+download token. The download route validates the entitlement again, then issues
+a 60-second signed URL for the private Supabase Storage object.
 
-Follow semantic versioning:
+## One-time 1.0.5 bridge release
 
-- **1.0.0** → Initial release
-- **1.0.1** → Bug fix release
-- **1.1.0** → New features (backwards compatible)
-- **2.0.0** → Breaking changes
+Existing 1.0.4 installations still discover releases through GitHub. For 1.0.5
+only, complete the private upload first, deploy and test the site endpoints, and
+then attach the exact same verified 1.0.5 ZIP to the GitHub release. This moves
+installed copies to the private updater without requiring customers to reinstall.
 
----
+Before publishing the bridge:
 
-## 🛡️ License Enforcement
+- Confirm `/api/pro-update-manifest` returns 1.0.5 and a private download URL for
+  an authorized test license.
+- Confirm invalid, expired, and over-limit licenses receive no update metadata.
+- Confirm `/api/pro-download` rejects tampered/expired tokens and inactive
+  entitlements.
+- Test a real WordPress upgrade from 1.0.4 to 1.0.5 and confirm the plugin remains
+  active afterward.
 
-Updates are **only available to users with active licenses**:
-- Expired licenses see update notification but can't download
-- Links point to https://shortcode-to-blocks.lemonsqueezy.com/billing to renew
-- GitHub repo should be **private** to prevent unauthorized access
-
----
-
-## 🧪 Testing Updates
-
-To test the update system locally:
-
-1. Install an old version on a test WordPress site
-2. Activate with a valid license key
-3. Create a new release on GitHub
-4. Wait 12 hours OR force check: Go to Dashboard → Updates → Click "Check Again"
-5. You should see the update notification
+Keep the GitHub 1.0.5 asset available during the adoption window. Future paid
+distribution belongs only in the private `pro-releases` bucket.

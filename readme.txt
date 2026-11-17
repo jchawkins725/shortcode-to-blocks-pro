@@ -4,7 +4,7 @@ Tags: gutenberg, wpbakery, shortcode, converter, migration
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -109,6 +109,10 @@ The free plugin continues to work for single-post conversion with its 11 basic c
 6. Converted Posts list with filtering
 
 == Changelog ==
+= 1.0.5 =
+* Change: Move future Pro update checks and downloads to the license-gated Shortcode to Blocks release service.
+* Security: Send license credentials in private request headers and issue short-lived download URLs only after entitlement validation.
+
 = 1.0.4 =
 * Compatibility: Adds WordPress 7.1 support; the editor integration is compatible with the fully iframed post editor.
 
@@ -141,6 +145,9 @@ The free plugin continues to work for single-post conversion with its 11 basic c
 * Auto-purge WP-Cron for backups older than 1 year
 
 == Upgrade Notice ==
+= 1.0.5 =
+Moves Pro updates to the private licensed release service. Existing 1.0.4 installations receive this bridge release through GitHub.
+
 = 1.0.4 =
 Compatibility release for WordPress 7.1. No feature or migration behavior changes.
 
